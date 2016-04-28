@@ -55,20 +55,95 @@ function aStarSearch<Node> (
     heuristics : (n:Node) => number,
     timeout : number
 ) : SearchResult<Node> {
-    // A dummy search result: it just picks the first possible neighbour
-    var result : SearchResult<Node> = {
-        path: [start],
-        cost: 0
-    };
-    while (result.path.length < 3) {
-        var edge : Edge<Node> = graph.outgoingEdges(start) [0];
-        if (! edge) break;
-        start = edge.to;
-        result.path.push(start);
-        result.cost += edge.cost;
+
+
+  var MapCost : collections.Dictionary<Node,number> = new collections.Dictionary<Node,number>(toString);
+  var VisitedParent : collections.Dictionary<Node,Node> = new collections.Dictionary<Node,Node>(toString);
+	var time : number = 0;
+  function totalCost(node : Node) {
+    var n:number = MapCost.getValue(node);
+    if (n == null){
+      n = Infinity;
     }
-    return result;
-}
+    return n;
+  }
+  function compareCosts(n1:Node,n2:Node) : number {
+    var c1 : number = totalCost(n1)+heuristics(n1);
+    var c2 : number = totalCost(n2)+heuristics(n2);
+    if( c1 < c2)
+      return 1;
+    else if (c2 > c1)
+      return -1;
+    else
+      return 0;
+  }
+  var frontier : collections.PriorityQueue<Node> = new collections.PriorityQueue<Node>(compareCosts);
+
+  //var frontier : collections.Set<Node> = new collections.Set<Node>();
+  var visitedNodes : collections.Set<Node> = new collections.Set<Node>();
+  //closedSet.add(start);
+  frontier.add(start);
+  MapCost.setValue(start,0);
+  var currentNode : Node;
+  //frontier.push(currentNode);
+	//var currentTime = new Date();
+
+	while (time < timeout) {
+    var parentNode = currentNode;
+    currentNode = frontier.dequeue();
+    VisitedParent.setValue(currentNode,parentNode);
+    visitedNodes.add(currentNode);
+    if (goal(currentNode)) {
+      //reconstruct path home
+      var finalCost : number = graph.outgoingEdges(currentNode)[i].cost+totalCost(currentNode);
+      var finalPath : Node[] = [];
+      var current : Node = newNode;
+      while (current != null){
+        finalPath.push(current)
+        current = VisitedParent.getValue(current);
+      }
+      finalPath = finalPath.reverse();
+      var result : SearchResult<Node> = {
+        path: finalPath,
+        cost: finalCost
+      };
+      return result;
+    }
+		//add currentnode's neighbours to frontier and calculate costs
+    var bestCost : number = Infinity;
+    var bestNode : Node = graph.outgoingEdges(currentNode)[0].to;
+		for (var i = 0; i >= graph.outgoingEdges(currentNode).length; i++) {
+      var newNode : Node = graph.outgoingEdges(currentNode)[i].to;
+      if (visitedNodes.contains(newNode)) { //DONT FORGET HEURISTICS COST
+        continue;
+      }
+      var cost : number = graph.outgoingEdges(currentNode)[i].cost+totalCost(currentNode);
+      if (!frontier.contains(newNode)) {
+        frontier.add(newNode);
+      } else {
+        if(cost >= totalCost(newNode)) {
+          continue; //then this is a slower path to newnode than the already known one
+        }
+      }
+      MapCost.setValue(newNode,cost);
+			frontier.enqueue(newNode);
+    }
+	}
+  console.log("error: timeout!");
+  return null;
+	}
+
+
+
+
+    //while (result.path.length < 3) {
+    //    var edge : Edge<Node> = graph.outgoingEdges(start) [0];
+    //    if (! edge) break;
+    //    start = edge.to;
+    //    result.path.push(start);
+    //    result.cost += edge.cost;
+    //}
+    //return result;
 
 
 //////////////////////////////////////////////////////////////////////
