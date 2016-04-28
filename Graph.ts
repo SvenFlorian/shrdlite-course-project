@@ -56,7 +56,7 @@ function aStarSearch<Node> (
     timeout : number
 ) : SearchResult<Node> {
 
-
+  //todo timeout
   function nodeToString(key:Node) : string {
     return key.toString();
   }
@@ -101,15 +101,17 @@ function aStarSearch<Node> (
     //console.log("visited nodes : " +  visitedNodes.toString());
     //console.log("frontier nodes : " +  frontier.toString());
     if (goal(currentNode)) {
-      //console.log("found the goal node!");
+      console.log("found the goal node!");
       //reconstruct path home
       var finalCost : number = graph.outgoingEdges(currentNode)[i].cost+totalCost(currentNode);
       var finalPath : Node[] = [];
       var current : Node = newNode;
-      while (current != null){
+      while (graph.compareNodes(current,start) != 0){
+        console.log(finalPath);
         finalPath.push(current)
         current = VisitedParent.getValue(current);
       }
+      finalPath.push(start);
       finalPath = finalPath.reverse();
       var result : SearchResult<Node> = {
         path: finalPath,
@@ -119,8 +121,7 @@ function aStarSearch<Node> (
     }
 
 		//add currentnode's neighbours to frontier and calculate costs
-    var bestCost : number = Infinity;
-    var bestNode : Node = graph.outgoingEdges(currentNode)[0].to;
+
 		for (var i = 0; i < graph.outgoingEdges(currentNode).length; i++) {
       //console.log(i);
       var newNode : Node = graph.outgoingEdges(currentNode)[i].to;
@@ -129,10 +130,12 @@ function aStarSearch<Node> (
         continue;
       }
       var cost : number = graph.outgoingEdges(currentNode)[i].cost+totalCost(currentNode);
+      console.log(totalCost(currentNode));
       if (!frontier.contains(newNode)) {
         frontier.add(newNode);
       } else {
         if(cost >= totalCost(newNode)) {
+          //console.log("continue!");
           continue; //then this is a slower path to newnode than the already known one
         }
       }

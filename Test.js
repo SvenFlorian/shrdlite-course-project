@@ -2545,6 +2545,7 @@ var SearchResult = (function () {
 * @returns A search result, which contains the path from `start` to a node satisfying `goal` and the cost of this path.
 */
 function aStarSearch(graph, start, goal, heuristics, timeout) {
+    //todo timeout
     function nodeToString(key) {
         return key.toString();
     }
@@ -2586,15 +2587,17 @@ function aStarSearch(graph, start, goal, heuristics, timeout) {
         //console.log("visited nodes : " +  visitedNodes.toString());
         //console.log("frontier nodes : " +  frontier.toString());
         if (goal(currentNode)) {
-            //console.log("found the goal node!");
+            console.log("found the goal node!");
             //reconstruct path home
             var finalCost = graph.outgoingEdges(currentNode)[i].cost + totalCost(currentNode);
             var finalPath = [];
             var current = newNode;
-            while (current != null) {
+            while (graph.compareNodes(current, start) != 0) {
+                console.log(finalPath);
                 finalPath.push(current);
                 current = VisitedParent.getValue(current);
             }
+            finalPath.push(start);
             finalPath = finalPath.reverse();
             var result = {
                 path: finalPath,
@@ -2603,8 +2606,6 @@ function aStarSearch(graph, start, goal, heuristics, timeout) {
             return result;
         }
         //add currentnode's neighbours to frontier and calculate costs
-        var bestCost = Infinity;
-        var bestNode = graph.outgoingEdges(currentNode)[0].to;
         for (var i = 0; i < graph.outgoingEdges(currentNode).length; i++) {
             //console.log(i);
             var newNode = graph.outgoingEdges(currentNode)[i].to;
@@ -2613,11 +2614,13 @@ function aStarSearch(graph, start, goal, heuristics, timeout) {
                 continue;
             }
             var cost = graph.outgoingEdges(currentNode)[i].cost + totalCost(currentNode);
+            console.log(totalCost(currentNode));
             if (!frontier.contains(newNode)) {
                 frontier.add(newNode);
             }
             else {
                 if (cost >= totalCost(newNode)) {
+                    //console.log("continue!");
                     continue; //then this is a slower path to newnode than the already known one
                 }
             }
