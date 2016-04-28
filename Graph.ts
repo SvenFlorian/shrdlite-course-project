@@ -66,7 +66,7 @@ function aStarSearch<Node> (
 	var time : number = 0;
   function totalCost(node : Node) {
     var n:number = MapCost.getValue(node);
-    if (n == null || n == undefined){ //same thing?
+    if (n == undefined){
       n = Infinity;
     }
     return n;
@@ -86,10 +86,9 @@ function aStarSearch<Node> (
   //var frontier : collections.Set<Node> = new collections.Set<Node>();
   var visitedNodes : collections.Set<Node> = new collections.Set<Node>();
   //closedSet.add(start);
-  frontier.add(start);
+  frontier.enqueue(start);
   MapCost.setValue(start,0);
-  var currentNode : Node;
-  //frontier.push(currentNode);
+  var currentNode : Node = start; // hence the startnode is its own parent
 	//var currentTime = new Date();
 
 	while (time < timeout) {
@@ -99,17 +98,16 @@ function aStarSearch<Node> (
     visitedNodes.add(currentNode);
     //console.log(parentNode);
     //console.log("visited nodes : " +  visitedNodes.toString());
-    //console.log("frontier nodes : " +  frontier.toString());
+    //console.log("frontier nodes : " +  frontier.size());
     if (goal(currentNode)) {
       console.log("found the goal node!");
       //reconstruct path home
-      var finalCost : number = graph.outgoingEdges(currentNode)[i].cost+totalCost(currentNode);
+      var finalCost : number = totalCost(currentNode);
       var finalPath : Node[] = [];
-      var current : Node = newNode;
-      while (graph.compareNodes(current,start) != 0){
-        console.log(finalPath);
-        finalPath.push(current)
-        current = VisitedParent.getValue(current);
+      while (graph.compareNodes(currentNode,start) != 0){
+        //console.log(currentNode);
+        finalPath.push(currentNode)
+        currentNode = VisitedParent.getValue(currentNode);
       }
       finalPath.push(start);
       finalPath = finalPath.reverse();
@@ -121,7 +119,6 @@ function aStarSearch<Node> (
     }
 
 		//add currentnode's neighbours to frontier and calculate costs
-
 		for (var i = 0; i < graph.outgoingEdges(currentNode).length; i++) {
       //console.log(i);
       var newNode : Node = graph.outgoingEdges(currentNode)[i].to;
@@ -130,22 +127,26 @@ function aStarSearch<Node> (
         continue;
       }
       var cost : number = graph.outgoingEdges(currentNode)[i].cost+totalCost(currentNode);
-      console.log(totalCost(currentNode));
+      //console.log(totalCost(currentNode));
       if (!frontier.contains(newNode)) {
         frontier.add(newNode);
-      } else {
-        if(cost >= totalCost(newNode)) {
+        MapCost.setValue(newNode,cost);
+  			frontier.enqueue(newNode);
+      }else if (cost >= totalCost(newNode)) {
           //console.log("continue!");
           continue; //then this is a slower path to newnode than the already known one
-        }
+      }else{
+          MapCost.setValue(newNode,cost);
+          VisitedParent.setValue(newNode, currentNode);
+          //need to re-enter into the frontier after the value update?
+          continue
       }
-      MapCost.setValue(newNode,cost);
-			frontier.enqueue(newNode);
     }
-	}
+  }
   console.log("error: timeout!");
   return null;
-	}
+}
+
 
 
 

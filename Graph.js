@@ -17,7 +17,7 @@ function aStarSearch(graph, start, goal, heuristics, timeout) {
     var time = 0;
     function totalCost(node) {
         var n = MapCost.getValue(node);
-        if (n == null || n == undefined) {
+        if (n == undefined) {
             n = Infinity;
         }
         return n;
@@ -34,9 +34,9 @@ function aStarSearch(graph, start, goal, heuristics, timeout) {
     }
     var frontier = new collections.PriorityQueue(compareCosts);
     var visitedNodes = new collections.Set();
-    frontier.add(start);
+    frontier.enqueue(start);
     MapCost.setValue(start, 0);
-    var currentNode;
+    var currentNode = start;
     while (time < timeout) {
         var parentNode = currentNode;
         currentNode = frontier.dequeue();
@@ -44,13 +44,11 @@ function aStarSearch(graph, start, goal, heuristics, timeout) {
         visitedNodes.add(currentNode);
         if (goal(currentNode)) {
             console.log("found the goal node!");
-            var finalCost = graph.outgoingEdges(currentNode)[i].cost + totalCost(currentNode);
+            var finalCost = totalCost(currentNode);
             var finalPath = [];
-            var current = newNode;
-            while (graph.compareNodes(current, start) != 0) {
-                console.log(finalPath);
-                finalPath.push(current);
-                current = VisitedParent.getValue(current);
+            while (graph.compareNodes(currentNode, start) != 0) {
+                finalPath.push(currentNode);
+                currentNode = VisitedParent.getValue(currentNode);
             }
             finalPath.push(start);
             finalPath = finalPath.reverse();
@@ -66,17 +64,19 @@ function aStarSearch(graph, start, goal, heuristics, timeout) {
                 continue;
             }
             var cost = graph.outgoingEdges(currentNode)[i].cost + totalCost(currentNode);
-            console.log(totalCost(currentNode));
             if (!frontier.contains(newNode)) {
                 frontier.add(newNode);
+                MapCost.setValue(newNode, cost);
+                frontier.enqueue(newNode);
+            }
+            else if (cost >= totalCost(newNode)) {
+                continue;
             }
             else {
-                if (cost >= totalCost(newNode)) {
-                    continue;
-                }
+                MapCost.setValue(newNode, cost);
+                VisitedParent.setValue(newNode, currentNode);
+                continue;
             }
-            MapCost.setValue(newNode, cost);
-            frontier.enqueue(newNode);
         }
     }
     console.log("error: timeout!");
