@@ -57,12 +57,16 @@ function aStarSearch<Node> (
 ) : SearchResult<Node> {
 
 
-  var MapCost : collections.Dictionary<Node,number> = new collections.Dictionary<Node,number>(toString);
-  var VisitedParent : collections.Dictionary<Node,Node> = new collections.Dictionary<Node,Node>(toString);
+  function nodeToString(key:Node) : string {
+    return key.toString();
+  }
+
+  var MapCost : collections.Dictionary<Node,number> = new collections.Dictionary<Node,number>(nodeToString);
+  var VisitedParent : collections.Dictionary<Node,Node> = new collections.Dictionary<Node,Node>(nodeToString);
 	var time : number = 0;
   function totalCost(node : Node) {
     var n:number = MapCost.getValue(node);
-    if (n == null){
+    if (n == null || n == undefined){ //same thing?
       n = Infinity;
     }
     return n;
@@ -70,9 +74,9 @@ function aStarSearch<Node> (
   function compareCosts(n1:Node,n2:Node) : number {
     var c1 : number = totalCost(n1)+heuristics(n1);
     var c2 : number = totalCost(n2)+heuristics(n2);
-    if( c1 < c2)
+    if(c1 < c2)
       return 1;
-    else if (c2 > c1)
+    else if (c2 < c1)
       return -1;
     else
       return 0;
@@ -93,7 +97,11 @@ function aStarSearch<Node> (
     currentNode = frontier.dequeue();
     VisitedParent.setValue(currentNode,parentNode);
     visitedNodes.add(currentNode);
+    //console.log(parentNode);
+    //console.log("visited nodes : " +  visitedNodes.toString());
+    //console.log("frontier nodes : " +  frontier.toString());
     if (goal(currentNode)) {
+      //console.log("found the goal node!");
       //reconstruct path home
       var finalCost : number = graph.outgoingEdges(currentNode)[i].cost+totalCost(currentNode);
       var finalPath : Node[] = [];
@@ -109,12 +117,15 @@ function aStarSearch<Node> (
       };
       return result;
     }
+
 		//add currentnode's neighbours to frontier and calculate costs
     var bestCost : number = Infinity;
     var bestNode : Node = graph.outgoingEdges(currentNode)[0].to;
-		for (var i = 0; i >= graph.outgoingEdges(currentNode).length; i++) {
+		for (var i = 0; i < graph.outgoingEdges(currentNode).length; i++) {
+      //console.log(i);
       var newNode : Node = graph.outgoingEdges(currentNode)[i].to;
-      if (visitedNodes.contains(newNode)) { //DONT FORGET HEURISTICS COST
+      if (visitedNodes.contains(newNode)) {
+        //console.log("continue1");
         continue;
       }
       var cost : number = graph.outgoingEdges(currentNode)[i].cost+totalCost(currentNode);
