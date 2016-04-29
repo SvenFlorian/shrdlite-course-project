@@ -37,12 +37,14 @@ function aStarSearch(graph, start, goal, heuristics, timeout) {
     frontier.enqueue(start);
     MapCost.setValue(start, 0);
     var currentNode = start;
+    var startTime = Date.now();
+    timeout = timeout * 1000;
     while (time < timeout) {
+        time = (Date.now() - startTime);
         var parentNode = currentNode;
         currentNode = frontier.dequeue();
         visitedNodes.add(currentNode);
         if (goal(currentNode)) {
-            console.log("found the goal node!");
             var finalCost = totalCost(currentNode);
             var finalPath = [];
             while (graph.compareNodes(currentNode, start) != 0) {

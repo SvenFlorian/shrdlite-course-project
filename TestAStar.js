@@ -2576,8 +2576,10 @@ function aStarSearch(graph, start, goal, heuristics, timeout) {
     frontier.enqueue(start);
     MapCost.setValue(start, 0);
     var currentNode = start; // hence the startnode is its own parent
-    //var currentTime = new Date();
+    var startTime = Date.now();
+    timeout = timeout * 1000;
     while (time < timeout) {
+        time = (Date.now() - startTime);
         var parentNode = currentNode;
         currentNode = frontier.dequeue();
         //VisitedParent.setValue(currentNode,parentNode);
