@@ -105,7 +105,7 @@ function aStarSearch<Node> (
       var finalCost : number = totalCost(currentNode);
       var finalPath : Node[] = [];
       while (graph.compareNodes(currentNode,start) != 0){
-        console.log(currentNode);
+        //console.log(currentNode);
         finalPath.push(currentNode)
         currentNode = VisitedParent.getValue(currentNode);
       }
@@ -129,7 +129,6 @@ function aStarSearch<Node> (
       var cost : number = graph.outgoingEdges(currentNode)[i].cost+totalCost(currentNode);
       //console.log(totalCost(currentNode));
       if (!frontier.contains(newNode)) {
-        frontier.add(newNode);
         MapCost.setValue(newNode,cost);
   			frontier.enqueue(newNode);
       }else if (cost >= totalCost(newNode)) {

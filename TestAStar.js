@@ -2591,7 +2591,7 @@ function aStarSearch(graph, start, goal, heuristics, timeout) {
             var finalCost = totalCost(currentNode);
             var finalPath = [];
             while (graph.compareNodes(currentNode, start) != 0) {
-                console.log(currentNode);
+                //console.log(currentNode);
                 finalPath.push(currentNode);
                 currentNode = VisitedParent.getValue(currentNode);
             }
@@ -2614,7 +2614,6 @@ function aStarSearch(graph, start, goal, heuristics, timeout) {
             var cost = graph.outgoingEdges(currentNode)[i].cost + totalCost(currentNode);
             //console.log(totalCost(currentNode));
             if (!frontier.contains(newNode)) {
-                frontier.add(newNode);
                 MapCost.setValue(newNode, cost);
                 frontier.enqueue(newNode);
             }
