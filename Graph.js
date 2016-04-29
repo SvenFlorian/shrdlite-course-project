@@ -40,7 +40,6 @@ function aStarSearch(graph, start, goal, heuristics, timeout) {
     while (time < timeout) {
         var parentNode = currentNode;
         currentNode = frontier.dequeue();
-        VisitedParent.setValue(currentNode, parentNode);
         visitedNodes.add(currentNode);
         if (goal(currentNode)) {
             console.log("found the goal node!");
@@ -67,6 +66,7 @@ function aStarSearch(graph, start, goal, heuristics, timeout) {
             if (!frontier.contains(newNode)) {
                 MapCost.setValue(newNode, cost);
                 frontier.enqueue(newNode);
+                VisitedParent.setValue(newNode, currentNode);
             }
             else if (cost >= totalCost(newNode)) {
                 continue;

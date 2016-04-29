@@ -94,7 +94,7 @@ function aStarSearch<Node> (
 	while (time < timeout) {
     var parentNode = currentNode;
     currentNode = frontier.dequeue();
-    VisitedParent.setValue(currentNode,parentNode);
+    //VisitedParent.setValue(currentNode,parentNode);
     visitedNodes.add(currentNode);
     //console.log(parentNode);
     //console.log("visited nodes : " +  visitedNodes.toString());
@@ -131,6 +131,7 @@ function aStarSearch<Node> (
       if (!frontier.contains(newNode)) {
         MapCost.setValue(newNode,cost);
   			frontier.enqueue(newNode);
+        VisitedParent.setValue(newNode, currentNode);
       }else if (cost >= totalCost(newNode)) {
           //console.log("continue!");
           continue; //then this is a slower path to newnode than the already known one
