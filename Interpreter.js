@@ -76,6 +76,7 @@ var Interpreter;
             else {
                 position = -1;
             }
+            i++;
         }
         row = findRow(obj, position, state, name, objectNameMap);
         findEntity(cmd.entity, position, row, state, objectNameMap);
@@ -84,6 +85,7 @@ var Interpreter;
     function findEntity(entity, position, row, state, objectNameMap) {
         var obj = entity.object;
         if ((obj.object == null) || (obj.location == null)) {
+            findRow(obj.location.entity.object, position, state, name, objectNameMap);
             return 0;
         }
         else {
@@ -139,29 +141,30 @@ var Interpreter;
         var obj;
         obj = state.objects[obj1];
         var result = true;
-        if (obj.form != obj2.form) {
+        if (obj.form != obj2[0]) {
             result = false;
         }
-        if ((obj2.size != null) && (obj.size != null) && (obj.size != obj2.size)) {
+        if ((obj2[1] != "0") && (obj.size != null) && (obj.size != obj2[1])) {
             result = false;
         }
-        if ((obj2.color != null) && (obj.color != null) && (obj.color != obj2.color)) {
+        if ((obj2[2] != "0") && (obj.color != null) && (obj.color != obj2[2])) {
             result = false;
         }
         return result;
     }
     function findDescription(obj, state) {
-        var result;
+        var st = "";
+        var result = ["0", "0", "0"];
         if (obj.form == null) {
             return findDescription(obj.object, state);
         }
         else {
-            result.form = obj.form;
+            result[0] = obj.form;
             if (obj.size != null) {
-                result.size = obj.size;
+                result[1] = obj.size;
             }
             if (obj.color != null) {
-                result.color = obj.color;
+                result[2] = obj.color;
             }
             return result;
         }
@@ -174,6 +177,7 @@ var Interpreter;
                 addValObjectMap(obj, name, objectNameMap);
                 return true;
             }
+            i++;
         }
         name = "";
         return false;
@@ -186,6 +190,7 @@ var Interpreter;
                 addValObjectMap(obj, name, objectNameMap);
                 return i;
             }
+            i++;
         }
         name = "";
         return -1;

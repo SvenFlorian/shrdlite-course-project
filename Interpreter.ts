@@ -1,5 +1,6 @@
 ///<reference path="World.ts"/>
 ///<reference path="Parser.ts"/>
+/// <reference path="./lib/collections.ts"/>
 
 /**
 * Interpreter module
@@ -168,17 +169,20 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
         {
           position = -1;
         }
+        i++;
       }
+
       row = findRow(obj, position, state, name, objectNameMap);
       findEntity(cmd.entity, position, row, state, objectNameMap);
 
       return objectNameMap;
     }
-    function findEntity( entity : Parser.Entity, position : number, row : number, state : WorldState, objectNameMap : collections.Dictionary<Parser.Object, string>)
+    function findEntity( entity : Parser.Entity, position : number, row : number, state : WorldState, objectNameMap : collections.Dictionary<Parser.Object, string>) : number
     {
       var obj :  Parser.Object = entity.object;
       if((obj.object ==  null) || (obj.location == null))
       {
+        findRow(obj.location.entity.object, position, state, name, objectNameMap);
         return 0;
       }
       else
@@ -249,20 +253,23 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
       }
     }
     // Compares the name of the object in the world with the given object to check whether they are the same one.
-    function checkSingle( obj1 : string, obj2 : ObjectDefinition, state : WorldState) : boolean
+    function checkSingle( obj1 : string, obj2 : string[], state : WorldState) : boolean
     {
       var obj : ObjectDefinition;
       obj = state.objects[obj1];
       var result : boolean = true;
-      if(obj.form != obj2.form)
+      //console.log("obj: " + obj.form + " " + obj.size + " " + obj.color);
+      //console.log("res: " + obj2[0] + " " + obj2[1] + " " + obj2[2]);
+      //console.log();
+      if(obj.form != obj2[0])
       {
         result = false;
       }
-      if((obj2.size != null) && (obj.size != null) && (obj.size != obj2.size))
+      if((obj2[1] != "0") && (obj.size != null) && (obj.size != obj2[1]))
       {
         result = false;
       }
-      if((obj2.color != null) && (obj.color != null) && (obj.color != obj2.color))
+      if((obj2[2] != "0") && (obj.color != null) && (obj.color != obj2[2]))
       {
         result = false;
       }
@@ -271,23 +278,25 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
     // If the object refers to another object and a location, and the referred object refers to other ones
     // finding the object itself (as in the form and shape) is hard and the object cannot be compared
     // with the name of the object in the world. This function finds the definition of the object.
-    function findDescription(obj : Parser.Object, state : WorldState) : ObjectDefinition
+    function findDescription(obj : Parser.Object, state : WorldState) : string[]
     {
-      var result : ObjectDefinition;
+      var st : string = "";
+      var result : string[] = ["0","0","0"];
+
       if(obj.form == null)
       {
         return findDescription(obj.object, state);
       }
       else
       {
-        result.form = obj.form;
+        result[0] = obj.form;
         if(obj.size != null)
         {
-          result.size = obj.size;
+          result[1] = obj.size;
         }
         if(obj.color != null)
         {
-          result.color = obj.color;
+          result[2] = obj.color;
         }
         return result;
       }
@@ -304,6 +313,7 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
           addValObjectMap(obj, name, objectNameMap);
           return true;
         }
+        i++;
       }
       name = "";
       return false;
@@ -320,6 +330,7 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
           addValObjectMap(obj, name, objectNameMap);
           return i;
         }
+        i++;
       }
       name = "";
       return -1;
