@@ -33,6 +33,12 @@ var Interpreter;
     Interpreter.stringifyLiteral = stringifyLiteral;
     function interpretCommand(cmd, state) {
         var objectNameMap = constructObjectNameMap(cmd, state);
+        function addValObjectMap(key, value) {
+            var oldString = objectNameMap.setValue(key, value);
+            if (oldString != undefined) {
+                throw new Error("ambiguity between " + value + " and " + oldString);
+            }
+        }
         var interpretation;
         if (cmd.command == "pick up" || cmd.command == "grasp" || cmd.command == "take") {
             var a = objectNameMap.getValue(cmd.entity.object);

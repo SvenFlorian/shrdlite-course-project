@@ -107,10 +107,14 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
      */
     function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula {
         // This returns a dummy interpretation involving two random objects in the world
-
         //Step 1.
         var objectNameMap : collections.Dictionary<Parser.Object,string> = constructObjectNameMap(cmd,state);
-
+        function addValObjectMap(key :  Parser.Object, value : string) {
+          var oldString : string = objectNameMap.setValue(key,value)
+          if(oldString != undefined) {
+            throw new Error("ambiguity between " + value + " and " + oldString);
+          }
+        }
         //Step 2.
         var interpretation : DNFFormula;
         if(cmd.command == "pick up" || cmd.command == "grasp" || cmd.command == "take") {
