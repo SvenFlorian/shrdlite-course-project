@@ -33,13 +33,26 @@ var Interpreter;
     Interpreter.stringifyLiteral = stringifyLiteral;
     function interpretCommand(cmd, state) {
         var objectNameMap = constructObjectNameMap(cmd, state);
-        var objects = Array.prototype.concat.apply([], state.stacks);
-        var a = objects[Math.floor(Math.random() * objects.length)];
-        var b = objects[Math.floor(Math.random() * objects.length)];
-        var interpretation = [[
-                { polarity: true, relation: "ontop", args: [a, "floor"] },
-                { polarity: true, relation: "holding", args: [b] }
-            ]];
+        var interpretation;
+        if (cmd.command == "pick up" || cmd.command == "grasp" || cmd.command == "take") {
+            var a = objectNameMap.getValue(cmd.entity.object);
+            interpretation = [[
+                    { polarity: true, relation: "pickedUp", args: [a] }
+                ]];
+        }
+        else if (cmd.command == "move" || cmd.command == "put" || cmd.command == "drop") {
+            var objectToMove;
+            if (cmd.entity == undefined) {
+                objectToMove = state.holding;
+            }
+            else {
+                objectToMove = objectNameMap.getValue(cmd.entity.object);
+            }
+            var newLocation = objectNameMap.getValue(cmd.location.entity.object);
+            interpretation = [[
+                    { polarity: true, relation: cmd.location.relation, args: [objectToMove, newLocation] }
+                ]];
+        }
         return interpretation;
     }
     function constructObjectNameMap(cmd, state) {

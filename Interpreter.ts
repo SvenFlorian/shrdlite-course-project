@@ -111,6 +111,27 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
         //Step 1.
         var objectNameMap : collections.Dictionary<Parser.Object,string> = constructObjectNameMap(cmd,state);
 
+        //Step 2.
+        var interpretation : DNFFormula;
+        if(cmd.command == "pick up" || cmd.command == "grasp" || cmd.command == "take") {
+          var a : string = objectNameMap.getValue(cmd.entity.object);
+          interpretation = [[
+              {polarity: true, relation: "pickedUp", args: [a]}
+          ]];
+        }else if (cmd.command == "move" || cmd.command == "put" || cmd.command == "drop") {
+          var objectToMove : string;
+          if (cmd.entity == undefined){ //does this work? should refer to the case of "it"
+            objectToMove = state.holding;
+          }else{ // if not refering to "it"
+            objectToMove = objectNameMap.getValue(cmd.entity.object);
+          }
+            var newLocation : string = objectNameMap.getValue(cmd.location.entity.object);
+            interpretation = [[
+                {polarity: true, relation: cmd.location.relation, args: [objectToMove, newLocation]}
+            ]];
+        }
+
+        /*
         var objects : string[] = Array.prototype.concat.apply([], state.stacks);
         var a : string = objects[Math.floor(Math.random() * objects.length)];
         var b : string = objects[Math.floor(Math.random() * objects.length)];
@@ -118,6 +139,7 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
             {polarity: true, relation: "ontop", args: [a, "floor"]},
             {polarity: true, relation: "holding", args: [b]}
         ]];
+        */
         return interpretation;
     }
     function constructObjectNameMap(cmd : Parser.Command, state : WorldState) : collections.Dictionary<Parser.Object,string> {
