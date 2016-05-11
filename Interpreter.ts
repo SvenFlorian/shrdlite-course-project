@@ -109,12 +109,7 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
         // This returns a dummy interpretation involving two random objects in the world
         //Step 1.
         var objectNameMap : collections.Dictionary<Parser.Object,string> = constructObjectNameMap(cmd,state);
-        function addValObjectMap(key :  Parser.Object, value : string) {
-          var oldString : string = objectNameMap.setValue(key,value)
-          if(oldString != undefined) {
-            throw new Error("ambiguity between " + value + " and " + oldString);
-          }
-        }
+
         //Step 2.
         var interpretation : DNFFormula;
         if(cmd.command == "pick up" || cmd.command == "grasp" || cmd.command == "take") {
@@ -146,9 +141,188 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
         */
         return interpretation;
     }
-    function constructObjectNameMap(cmd : Parser.Command, state : WorldState) : collections.Dictionary<Parser.Object,string> {
+    function addValObjectMap(key : Parser.Object, value : string, objectNameMap : collections.Dictionary<Parser.Object, string>) {
+      var oldString : string = objectNameMap.setValue(key,value)
+      if(oldString != undefined) {
+        throw new Error("ambiguity between " + value + " and " + oldString);
+      }
+    }
+    function constructObjectNameMap(cmd : Parser.Command, state : WorldState) : collections.Dictionary<Parser.Object,string>
+    {
       var objectNameMap : collections.Dictionary<Parser.Object,string> = new collections.Dictionary<Parser.Object,string>();
+
+      var i : number = 0;
+      var obj : Parser.Object = cmd.entity.object;
+      var name : string;
+      var row : number;
+      var position : number;
+
+      while(i < state.stacks.length)
+      {
+        if(checkStack(obj, i, state, name, objectNameMap))
+        {
+          position = i;
+          break;
+        }
+        else
+        {
+          position = -1;
+        }
+      }
+      row = findRow(obj, position, state, name, objectNameMap);
+      findEntity(cmd.entity, position, row, state, objectNameMap);
+
       return objectNameMap;
+    }
+    function findEntity( entity : Parser.Entity, position : number, row : number, state : WorldState, objectNameMap : collections.Dictionary<Parser.Object, string>)
+    {
+      var obj :  Parser.Object = entity.object;
+      if((obj.object ==  null) || (obj.location == null))
+      {
+        return 0;
+      }
+      else
+      {
+        if((obj.location.relation == "on top of") ||  (obj.location.relation == "above"))
+        {
+          if( findRow(obj.location.entity.object, position, state, name, objectNameMap) != -1)
+          {
+            return findEntity(obj.location.entity, position, row + 1, state, objectNameMap);
+          }
+          else
+          {
+            return -1;
+          }
+        }
+        else if((obj.location.relation == "inside") || (obj.location.relation == "under"))
+        {
+          if(findRow(obj.location.entity.object, position, state, name, objectNameMap) != -1)
+          {
+            return findEntity(obj.location.entity, position, row - 1, state, objectNameMap);
+          }
+          else
+          {
+            return -1;
+          }
+        }
+        else if ((obj.location.relation == "left of"))
+        {
+          if(checkStack(obj.object, position - 1, state, name, objectNameMap))
+          {
+            return findEntity(obj.location.entity, position - 1, row, state, objectNameMap);
+          }
+          else
+          {
+            return -1;
+          }
+        }
+        else if ((obj.location.relation == "right of"))
+        {
+          if(checkStack(obj.object, position + 1, state, name, objectNameMap))
+          {
+            return findEntity(obj.location.entity, position + 1, row, state, objectNameMap);
+          }
+          else
+          {
+            return -1;
+          }
+        }
+        else if(obj.location.relation == "beside")
+        {
+          if(checkStack(obj.object, position - 1, state, name, objectNameMap))
+          {
+            return findEntity(obj.location.entity, position - 1, row, state, objectNameMap);
+          }
+          else if(checkStack(obj.object, position + 1, state, name, objectNameMap))
+          {
+            return findEntity(obj.location.entity, position + 1, row, state, objectNameMap);
+          }
+          else
+          {
+            return -1;
+          }
+        }
+        else
+        {
+          return -1;
+        }
+      }
+    }
+    // Compares the name of the object in the world with the given object to check whether they are the same one.
+    function checkSingle( obj1 : string, obj2 : ObjectDefinition, state : WorldState) : boolean
+    {
+      var obj : ObjectDefinition;
+      obj = state.objects[obj1];
+      var result : boolean = true;
+      if(obj.form != obj2.form)
+      {
+        result = false;
+      }
+      if((obj2.size != null) && (obj.size != null) && (obj.size != obj2.size))
+      {
+        result = false;
+      }
+      if((obj2.color != null) && (obj.color != null) && (obj.color != obj2.color))
+      {
+        result = false;
+      }
+      return result;
+    }
+    // If the object refers to another object and a location, and the referred object refers to other ones
+    // finding the object itself (as in the form and shape) is hard and the object cannot be compared
+    // with the name of the object in the world. This function finds the definition of the object.
+    function findDescription(obj : Parser.Object, state : WorldState) : ObjectDefinition
+    {
+      var result : ObjectDefinition;
+      if(obj.form == null)
+      {
+        return findDescription(obj.object, state);
+      }
+      else
+      {
+        result.form = obj.form;
+        if(obj.size != null)
+        {
+          result.size = obj.size;
+        }
+        if(obj.color != null)
+        {
+          result.color = obj.color;
+        }
+        return result;
+      }
+    }
+    // Checks whether the given object is in a certain stack or not.
+    function checkStack(obj : Parser.Object, position : number, state : WorldState, name : string, objectNameMap : collections.Dictionary<Parser.Object, string>) : boolean
+    {
+      var i : number = 0;
+      while( i < state.stacks[position].length)
+      {
+        if(checkSingle(state.stacks[position][i], findDescription(obj, state), state))
+        {
+          name = state.stacks[position][i];
+          addValObjectMap(obj, name, objectNameMap);
+          return true;
+        }
+      }
+      name = "";
+      return false;
+    }
+    // Finds the row in the stack of the given object. Returns -1 if the object is not in the stack.
+    function findRow(obj : Parser.Object, position : number, state : WorldState, name : string, objectNameMap : collections.Dictionary<Parser.Object, string>) : number
+    {
+      var i : number = 0;
+      while (i < state.stacks[position].length)
+      {
+        if(checkSingle(state.stacks[position][i], findDescription(obj, state), state))
+        {
+          name = state.stacks[position][i];
+          addValObjectMap(obj, name, objectNameMap);
+          return i;
+        }
+      }
+      name = "";
+      return -1;
     }
 
 }
