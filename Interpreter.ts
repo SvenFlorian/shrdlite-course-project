@@ -109,28 +109,36 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
     function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula {
         // This returns a dummy interpretation involving two random objects in the world
         //Step 2.
-        var interpretation : DNFFormula;
-        interpretation = [[
-            ]];
-        if(cmd.command == "pick up" || cmd.command == "grasp" || cmd.command == "take") {
-          var potentialObjs : collections.Set<string> = getPossibleObjs(cmd.entity.object);
 
-          for(var obj in potentialObjs) {
-            var lit : Literal = {polarity: true, relation: "holding", args: [obj]}
+        var interpretation : DNFFormula;
+        interpretation = [
+            ];
+        if(cmd.command == "pick up" || cmd.command == "grasp" || cmd.command == "take") {
+          var potentialObjs : Array<string> = getPossibleObjs(cmd.entity.object).toArray();
+          for(var i = 0; i < potentialObjs.length; i++) {
+            console.log("1");
+            var obj : string = potentialObjs[i];
+            var lit : Literal = {polarity: true, relation: "holding", args: [obj]};
             interpretation.push([lit]);
           }
 
         }else if (cmd.command == "move" || cmd.command == "put" || cmd.command == "drop") {
-          var potentialObjs : collections.Set<string> = getPossibleObjs(cmd.entity.object);
-          var potentialLocs : collections.Set<string> = getPossibleObjs(cmd.location.entity.object);
+          var potentialObjs : Array<string> = getPossibleObjs(cmd.entity.object).toArray();
+          var potentialLocs : Array<string> = getPossibleObjs(cmd.location.entity.object).toArray();
           if (cmd.entity == undefined){ //does this work? should refer to the case of "it"
-            for(var loc in potentialLocs) {
+            for(var i = 0; i < potentialLocs.length; i++) {
+              console.log("2");
+              var loc : string = potentialLocs[i];
               var lit : Literal = {polarity: true, relation: cmd.location.relation, args: [state.holding,loc]}
               interpretation.push([lit]);
             }
           }else{
-            for(var obj in potentialObjs) {
-              for(var loc in potentialLocs) {
+            for(var i = 0; i < potentialObjs.length; i++) {
+              console.log("3");
+              var obj : string = potentialObjs[i];
+              for(var j = 0; j < potentialLocs.length; j++) {
+                console.log("4");
+                var loc : string = potentialLocs[j];
                 var lit : Literal = {polarity: true, relation: cmd.location.relation, args: [obj,loc]}
                 interpretation.push([lit]);
               }
@@ -146,10 +154,22 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
             {polarity: true, relation: "holding", args: [b]}
         ]];
         */
+        if (interpretation.length == 0) {
+          return null;
+        }
         return interpretation;
     }
     function getPossibleObjs(obj : Parser.Object) : collections.Set<string> {
-      return null;
+      var set : collections.Set<string> = new collections.Set<string>();
+      if(obj.form == "ball") {
+        set.add("e");
+        set.add("f");
+      }else if (obj.form == "box"){
+        set.add("k");
+        set.add("m");
+        set.add("l");
+      }
+      return set;
     }
 
     function addValObjectMap(key : Parser.Object, value : string, objectNameMap : collections.Dictionary<Parser.Object, string>) {

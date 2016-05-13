@@ -33,36 +33,57 @@ var Interpreter;
     Interpreter.stringifyLiteral = stringifyLiteral;
     function interpretCommand(cmd, state) {
         var interpretation;
-        interpretation = [[]];
+        interpretation = [];
         if (cmd.command == "pick up" || cmd.command == "grasp" || cmd.command == "take") {
-            var potentialObjs = getPossibleObjs(cmd.entity.object);
-            for (var obj in potentialObjs) {
+            var potentialObjs = getPossibleObjs(cmd.entity.object).toArray();
+            for (var i = 0; i < potentialObjs.length; i++) {
+                console.log("1");
+                var obj = potentialObjs[i];
                 var lit = { polarity: true, relation: "holding", args: [obj] };
                 interpretation.push([lit]);
             }
         }
         else if (cmd.command == "move" || cmd.command == "put" || cmd.command == "drop") {
-            var potentialObjs = getPossibleObjs(cmd.entity.object);
-            var potentialLocs = getPossibleObjs(cmd.location.entity.object);
+            var potentialObjs = getPossibleObjs(cmd.entity.object).toArray();
+            var potentialLocs = getPossibleObjs(cmd.location.entity.object).toArray();
             if (cmd.entity == undefined) {
-                for (var loc in potentialLocs) {
+                for (var i = 0; i < potentialLocs.length; i++) {
+                    console.log("2");
+                    var loc = potentialLocs[i];
                     var lit = { polarity: true, relation: cmd.location.relation, args: [state.holding, loc] };
                     interpretation.push([lit]);
                 }
             }
             else {
-                for (var obj in potentialObjs) {
-                    for (var loc in potentialLocs) {
+                for (var i = 0; i < potentialObjs.length; i++) {
+                    console.log("3");
+                    var obj = potentialObjs[i];
+                    for (var j = 0; j < potentialLocs.length; j++) {
+                        console.log("4");
+                        var loc = potentialLocs[j];
                         var lit = { polarity: true, relation: cmd.location.relation, args: [obj, loc] };
                         interpretation.push([lit]);
                     }
                 }
             }
         }
+        if (interpretation.length == 0) {
+            return null;
+        }
         return interpretation;
     }
     function getPossibleObjs(obj) {
-        return null;
+        var set = new collections.Set();
+        if (obj.form == "ball") {
+            set.add("e");
+            set.add("f");
+        }
+        else if (obj.form == "box") {
+            set.add("k");
+            set.add("m");
+            set.add("l");
+        }
+        return set;
     }
     function addValObjectMap(key, value, objectNameMap) {
         var oldString = objectNameMap.setValue(key, value);
