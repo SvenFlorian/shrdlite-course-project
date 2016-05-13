@@ -119,6 +119,17 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
           ]];
         }else if (cmd.command == "move" || cmd.command == "put" || cmd.command == "drop") {
           var objectToMove : string;
+
+          //goal 1: cmd.object , cmd.object.location.relation , cmd.object.location.entity.object;
+          //goal 2: cmd.object.object, cmd.object.object.location.relation, cmd.object.object.location.entity.object
+          //goal 3: cmd.object.location.entity.object , cmd.object.location.entity.object.location.relation, cmd.object.location.entity.object.location.entity.object
+
+          // Goal 1: Find out which object it's referring to
+          // Goal 2: Find out which object it is relating to
+          // Goal 3: Make the relation happen
+
+          // aka only make the highest level relation happen, the others are for specifying
+
           if (cmd.entity == undefined){ //does this work? should refer to the case of "it"
             objectToMove = state.holding;
           }else{ // if not refering to "it"
