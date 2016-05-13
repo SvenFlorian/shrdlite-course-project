@@ -7,6 +7,11 @@ interface TestCase {
 
 var allTestCases : TestCase[] = [
     {world: "small",
+     utterance: "put a ball on a box",
+     interpretations: []
+    },
+
+    {world: "small",
      utterance: "take an object",
      interpretations: [["holding(e)", "holding(f)", "holding(g)", "holding(k)", "holding(l)", "holding(m)"]]
     },
@@ -108,4 +113,3 @@ var allTestCases : TestCase[] = [
 //                         "inside(e,k) & inside(f,m)", "inside(e,l) & inside(f,m)"]]
 //     }
 // );
-
