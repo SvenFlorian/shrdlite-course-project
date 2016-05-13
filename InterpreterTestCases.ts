@@ -5,6 +5,7 @@ interface TestCase {
     interpretations : string[][]
 }
 
+
 var allTestCases : TestCase[] = [
     {world: "small",
      utterance: "put a ball on a box",
@@ -59,7 +60,7 @@ var allTestCases : TestCase[] = [
     {world: "small",
      utterance: "put a white object beside a blue object",
      interpretations: [["beside(e,g) | beside(e,m)"]]
-    },
+    },    
 
     {world: "small",
      utterance: "put a ball in a box on the floor",

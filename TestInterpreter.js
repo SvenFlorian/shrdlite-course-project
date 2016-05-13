@@ -2813,18 +2813,18 @@ var Interpreter;
         var result = new collections.Set();
         for (var i = 0; i < mObject.length; i++) {
             if (obj.form != null && obj.form != "anyform" && obj.form != mObject[i].form) {
-                console.log("Form did not match!");
                 continue;
             }
             if (obj.size != null && obj.form != "anysize" && obj.size != mObject[i].size) {
-                console.log("Size did not match!");
                 continue;
             }
             if (obj.color != null && obj.form != "anycolor" && obj.color != mObject[i].color) {
-                console.log("Color did not match!");
                 continue;
             }
             result.add(mString[i]);
+        }
+        if (obj.form == "floor") {
+            result.add("floor");
         }
         return result;
     }
@@ -2836,12 +2836,10 @@ var Interpreter;
     function traverseParseTree(obj, mObject, mString, state) {
         var result = new collections.Set();
         if (obj.form != null) {
-            console.log("ONLY ONE OBJECT!--------");
             return matchingObjects(obj, mObject, mString);
         }
         else {
             // the ball has a relation!
-            console.log("---------NICE PARSE TREE!");
             var object = obj.object;
             var relation = obj.location.relation;
             var relativeObject = obj.location.entity.object;
@@ -2859,6 +2857,7 @@ var Interpreter;
             case "ontop":
                 for (var k = 0; k < relative.length; k++) {
                     if (relative[k] == "floor") {
+                        console.log("FLOOR JUST ENTERED");
                         var orig = original.toArray();
                         for (var l = 0; l < orig.length; l++) {
                             matchingObjects.add(orig[l]);
@@ -2876,7 +2875,6 @@ var Interpreter;
                         }
                     }
                 }
-                matchingObjects.add("floor");
                 break;
             case "inside":
                 for (var k = 0; k < relative.length; k++) {

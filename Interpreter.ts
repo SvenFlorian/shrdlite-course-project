@@ -288,6 +288,8 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
         result.add(mString[i]);
       }
 
+      if (obj.form == "floor") { result.add("floor"); }
+
       return result;
     }
 
@@ -302,16 +304,14 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
       var result : collections.Set<string> = new collections.Set<string>();
 
       if (obj.form != null) {
-        console.log("ONLY ONE OBJECT!--------")
         return matchingObjects(obj, mObject, mString);
         // we have the ball
       } else {
         // the ball has a relation!
-        console.log("---------NICE PARSE TREE!")
         var object = obj.object;
         var relation : string = obj.location.relation;
         var relativeObject : Parser.Object = obj.location.entity.object;
-
+        
         var originalDataset : collections.Set<string> = traverseParseTree(object, mObject, mString, state);
         var relativeDataset : collections.Set<string> = traverseParseTree(relativeObject, mObject, mString, state);
         //originalDataset.intersect(relativeDataset);
@@ -328,6 +328,7 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
         case "ontop": 
           for (var k = 0; k < relative.length; k++) {
             if (relative[k] == "floor") {
+              console.log("FLOOR JUST ENTERED");
               var orig : Array<string> = original.toArray();
               for (var l = 0; l < orig.length; l++) {
                 matchingObjects.add(orig[l]);
@@ -343,7 +344,6 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
               } 
             }
           }
-          matchingObjects.add("floor");
         break;
         case "inside": 
           for (var k = 0; k < relative.length; k++) {
