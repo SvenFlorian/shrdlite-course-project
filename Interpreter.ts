@@ -108,31 +108,35 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
      */
     function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula {
         // This returns a dummy interpretation involving two random objects in the world
-
         //Step 2.
         var interpretation : DNFFormula;
-        if(cmd.command == "pick up" || cmd.command == "grasp" || cmd.command == "take") {
-          var a : string = objectNameMap.getValue(cmd.entity.object);
-          interpretation = [[
-              {polarity: true, relation: "holding", args: [a]}
-          ]];
-        }else if (cmd.command == "move" || cmd.command == "put" || cmd.command == "drop") {
-          var objectToMove : string;
-          if (cmd.entity == undefined){ //does this work? should refer to the case of "it"
-            objectToMove = state.holding;
-          }else{ // if not refering to "it"
-            console.log("cmd entity == defined");
-            objectToMove = objectNameMap.getValue(cmd.entity.object);
-          }
-            console.log("stringify object :" + stringifyObject(cmd.location.entity.object));
-            console.log("stringify object2 :" + stringifyObject(cmd.entity.object));
-            var newLocation : string = objectNameMap.getValue(cmd.location.entity.object);
-
-            interpretation = [[
-                {polarity: true, relation: cmd.location.relation, args: [objectToMove, newLocation]}
+        interpretation = [[
             ]];
-        }
+        if(cmd.command == "pick up" || cmd.command == "grasp" || cmd.command == "take") {
+          var potentialObjs : collections.Set<string> = getPossibleObjs(cmd.entity.object);
 
+          for(var obj in potentialObjs) {
+            var lit : Literal = {polarity: true, relation: "holding", args: [obj]}
+            interpretation.push([lit]);
+          }
+
+        }else if (cmd.command == "move" || cmd.command == "put" || cmd.command == "drop") {
+          var potentialObjs : collections.Set<string> = getPossibleObjs(cmd.entity.object);
+          var potentialLocs : collections.Set<string> = getPossibleObjs(cmd.location.entity.object);
+          if (cmd.entity == undefined){ //does this work? should refer to the case of "it"
+            for(var loc in potentialLocs) {
+              var lit : Literal = {polarity: true, relation: cmd.location.relation, args: [state.holding,loc]}
+              interpretation.push([lit]);
+            }
+          }else{
+            for(var obj in potentialObjs) {
+              for(var loc in potentialLocs) {
+                var lit : Literal = {polarity: true, relation: cmd.location.relation, args: [obj,loc]}
+                interpretation.push([lit]);
+              }
+            }
+          }
+        }
         /*
         var objects : string[] = Array.prototype.concat.apply([], state.stacks);
         var a : string = objects[Math.floor(Math.random() * objects.length)];
