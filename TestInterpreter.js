@@ -2658,7 +2658,9 @@ var Interpreter;
                 console.log("1");
                 var obj = potentialObjs[i];
                 var lit = { polarity: true, relation: "holding", args: [obj] };
-                interpretation.push([lit]);
+                if (isFeasible(lit, state)) {
+                    interpretation.push([lit]);
+                }
             }
         }
         else if (cmd.command == "move" || cmd.command == "put" || cmd.command == "drop") {
@@ -2669,7 +2671,9 @@ var Interpreter;
                     console.log("2");
                     var loc = potentialLocs[i];
                     var lit = { polarity: true, relation: cmd.location.relation, args: [state.holding, loc] };
-                    interpretation.push([lit]);
+                    if (isFeasible(lit, state)) {
+                        interpretation.push([lit]);
+                    }
                 }
             }
             else {
@@ -2680,7 +2684,9 @@ var Interpreter;
                         console.log("4");
                         var loc = potentialLocs[j];
                         var lit = { polarity: true, relation: cmd.location.relation, args: [obj, loc] };
-                        interpretation.push([lit]);
+                        if (isFeasible(lit, state)) {
+                            interpretation.push([lit]);
+                        }
                     }
                 }
             }
@@ -2700,6 +2706,65 @@ var Interpreter;
         return interpretation;
         var _a;
     }
+    function isFeasible(lit, state) {
+        if (lit.relation == "holding" && lit.args[0] == "floor") {
+            return false;
+        } //otherwise there are 2 arguments
+        var obj1 = state.objects[lit.args[0]];
+        var obj2 = state.objects[lit.args[1]];
+        if (lit.args[1] == lit.args[0]) {
+            return false;
+        }
+        switch (lit.relation) {
+            case "ontop":
+                if (obj2.form != "table" && lit.args[1] != "floor") {
+                    return false;
+                }
+                else if (obj2.form == "table" && obj1.form == "ball") {
+                    return false;
+                }
+                break;
+            case "inside":
+                if (obj2.form != "box") {
+                    return false;
+                }
+                else if ((obj1.size == obj2.size && obj1.form != "ball") || (obj1.size == "large" && obj2.size == "small")) {
+                    return false;
+                }
+                break;
+            case "above":
+                if (obj2.form == "ball") {
+                    return false;
+                }
+                if (obj1.size == "large" && obj2.size == "small") {
+                    return false;
+                }
+                if (lit.args[0] == "floor") {
+                    return false;
+                }
+                break;
+            case "under":
+                if (obj1.form == "ball") {
+                    return false;
+                }
+                if (obj1.size == "small" && obj2.size == "large") {
+                    return false;
+                }
+                if (lit.args[1] == "floor") {
+                    return false;
+                }
+                break;
+            case "leftof":
+                break;
+            case "rightof":
+                break;
+            case "beside":
+                break;
+            default:
+                break;
+        }
+        return true;
+    }
     function getPossibleObjs(obj) {
         var set = new collections.Set();
         if (obj.form == "ball") {
@@ -2710,6 +2775,13 @@ var Interpreter;
             set.add("k");
             set.add("m");
             set.add("l");
+        }
+        else if (obj.form == "table") {
+            set.add("g");
+        }
+        if (obj.color == "blue") {
+            set.add("g");
+            set.add("m");
         }
         return set;
     }
@@ -3581,6 +3653,10 @@ ExampleWorlds["impossible"] = {
     ]
 };
 var allTestCases = [
+    { world: "small",
+        utterance: "put a ball on a box",
+        interpretations: []
+    },
     { world: "small",
         utterance: "take an object",
         interpretations: [["holding(e)", "holding(f)", "holding(g)", "holding(k)", "holding(l)", "holding(m)"]]
