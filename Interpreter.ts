@@ -109,7 +109,6 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
     function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula {
         // This returns a dummy interpretation involving two random objects in the world
         //Step 2.
-
         var interpretation : DNFFormula;
         interpretation = [
             ];
@@ -119,7 +118,9 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
             console.log("1");
             var obj : string = potentialObjs[i];
             var lit : Literal = {polarity: true, relation: "holding", args: [obj]};
-            interpretation.push([lit]);
+            if(isFeasible(lit, state)) {
+              interpretation.push([lit]);
+            }
           }
 
         }else if (cmd.command == "move" || cmd.command == "put" || cmd.command == "drop") {
@@ -130,7 +131,9 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
               console.log("2");
               var loc : string = potentialLocs[i];
               var lit : Literal = {polarity: true, relation: cmd.location.relation, args: [state.holding,loc]}
-              interpretation.push([lit]);
+              if(isFeasible(lit, state)) {
+                interpretation.push([lit]);
+              }
             }
           }else{
             for(var i = 0; i < potentialObjs.length; i++) {
@@ -140,7 +143,9 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
                 console.log("4");
                 var loc : string = potentialLocs[j];
                 var lit : Literal = {polarity: true, relation: cmd.location.relation, args: [obj,loc]}
-                interpretation.push([lit]);
+                if(isFeasible(lit, state)) {
+                  interpretation.push([lit]);
+                }
               }
             }
           }
@@ -159,7 +164,68 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
         }
         return interpretation;
     }
+    function isFeasible(lit : Literal, state : WorldState) : boolean {
+      if (lit.relation == "holding" && lit.args[0] == "floor") {
+        return false;
+      } //otherwise there are 2 arguments
+      var obj1 : Parser.Object = state.objects[lit.args[0]];
+      var obj2 : Parser.Object = state.objects[lit.args[1]];
+      if (lit.args[1] == lit.args[0]) {
+        return false;
+      }
+      switch (lit.relation) {
+        case "ontop":
+          if (obj2.form != "table" && lit.args[1] != "floor") {
+            return false;
+          }else if (obj2.form == "table" && obj1.form == "ball") {
+            return false;
+          }
+          break;
+        case "inside": //tested
+          if (obj2.form != "box") {
+            return false;
+          }else if ((obj1.size == obj2.size && obj1.form != "ball")||(obj1.size == "large" && obj2.size == "small")) {
+            return false;
+          }
+          break;
+        case "above": //tested kind of
+          if (obj2.form == "ball") {
+             return false;
+          }
+          if (obj1.size == "large" && obj2.size == "small") {
+             return false;
+          }
+          if (lit.args[0] == "floor") {
+             return false;
+          }
+          break;
+        case "under":
+          if (obj1.form == "ball") {
+            return false;
+          }
+          if (obj1.size == "small" && obj2.size == "large") {
+            return false;
+          }
+          if (lit.args[1] == "floor") {
+            return false;
+          }
+          break;
+        case "leftof": //nothing
+          break;
+        case "rightof": //nothing
+          break;
+        case "beside": //nothing
+          break;
+        default :
+          break;
+        }
+        return true;
+    }
     function getPossibleObjs(obj : Parser.Object) : collections.Set<string> {
+      var set : collections.Set<string> = new collections.Set<string>();
+      return set;
+    }
+    function getPossibleObjsTest(obj : Parser.Object) : collections.Set<string> {
       var set : collections.Set<string> = new collections.Set<string>();
       if(obj.form == "ball") {
         set.add("e");
@@ -168,6 +234,12 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
         set.add("k");
         set.add("m");
         set.add("l");
+      }else if(obj.form == "table") {
+        set.add("g");
+      }
+      if(obj.color == "blue") {
+        set.add("g");
+        set.add("m");
       }
       return set;
     }
