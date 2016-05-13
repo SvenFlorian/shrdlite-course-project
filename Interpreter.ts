@@ -119,7 +119,6 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
         if(cmd.command == "pick up" || cmd.command == "grasp" || cmd.command == "take") {
           var potentialObjs : Array<string> = traverseParseTree(cmd.entity.object, mObject, mString, state).toArray();
           for(var i = 0; i < potentialObjs.length; i++) {
-            console.log("1");
             var obj : string = potentialObjs[i];
             var lit : Literal = {polarity: true, relation: "holding", args: [obj]};
             if(isFeasible(lit, state)) {
@@ -132,7 +131,6 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
           var potentialLocs : Array<string> = traverseParseTree(cmd.location.entity.object, mObject, mString, state).toArray();
           if (cmd.entity == undefined){ //does this work? should refer to the case of "it"
             for(var i = 0; i < potentialLocs.length; i++) {
-              console.log("2");
               var loc : string = potentialLocs[i];
               var lit : Literal = {polarity: true, relation: cmd.location.relation, args: [state.holding,loc]}
               if(isFeasible(lit, state)) {
@@ -141,10 +139,8 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
             }
           }else{
             for(var i = 0; i < potentialObjs.length; i++) {
-              console.log("3");
               var obj : string = potentialObjs[i];
               for(var j = 0; j < potentialLocs.length; j++) {
-                console.log("4");
                 var loc : string = potentialLocs[j];
                 var lit : Literal = {polarity: true, relation: cmd.location.relation, args: [obj,loc]}
                 if(isFeasible(lit, state)) {
@@ -154,15 +150,6 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
             }
           }
         }
-        /*
-        var objects : string[] = Array.prototype.concat.apply([], state.stacks);
-        var a : string = objects[Math.floor(Math.random() * objects.length)];
-        var b : string = objects[Math.floor(Math.random() * objects.length)];
-        var interpretation : DNFFormula = [[
-            {polarity: true, relation: "ontop", args: [a, "floor"]},
-            {polarity: true, relation: "holding", args: [b]}
-        ]];
-        */
         if (interpretation.length == 0) {
           return null;
         }
@@ -225,10 +212,7 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
         }
         return true;
     }
-    function getPossibleObjs(obj : Parser.Object) : collections.Set<string> {
-      var set : collections.Set<string> = new collections.Set<string>();
-      return set;
-    }
+
     function getPossibleObjsTest(obj : Parser.Object) : collections.Set<string> {
       var set : collections.Set<string> = new collections.Set<string>();
       if(obj.form == "ball") {
@@ -298,9 +282,9 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
     function matchingObjects(obj : Parser.Object, mObject : Array<ObjectDefinition>, mString : Array<string>) : collections.Set<string> {
       var result : collections.Set<string> = new collections.Set<string>();
       for (var i = 0; i < mObject.length ; i++) {
-        if (obj.form != null && obj.form != mObject[i].form) { continue; }
-        if (obj.size != null && obj.size != mObject[i].size) { continue; }
-        if (obj.color != null && obj.color != mObject[i].color) { continue; }
+        if (obj.form != null && obj.form != "anyform" && obj.form != mObject[i].form) { continue; }
+        if (obj.size != null && obj.form != "anysize" && obj.size != mObject[i].size) { continue; }
+        if (obj.color != null && obj.form != "anycolor" && obj.color != mObject[i].color) { continue; }
         result.add(mString[i]);
       }
 
@@ -318,10 +302,12 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
       var result : collections.Set<string> = new collections.Set<string>();
 
       if (obj.form != null) {
+        console.log("ONLY ONE OBJECT!--------")
         return matchingObjects(obj, mObject, mString);
         // we have the ball
       } else {
         // the ball has a relation!
+        console.log("---------NICE PARSE TREE!")
         var object = obj.object;
         var relation : string = obj.location.relation;
         var relativeObject : Parser.Object = obj.location.entity.object;
@@ -341,8 +327,14 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
       switch (relation) {
         case "ontop": 
           for (var k = 0; k < relative.length; k++) {
-            var s : string = relative[k];
-            if (state.objects[s].form == "box") { continue; }
+            if (relative[k] == "floor") {
+              var orig : Array<string> = original.toArray();
+              for (var l = 0; l < orig.length; l++) {
+                matchingObjects.add(orig[l]);
+              }
+              break;
+            }
+            if (state.objects[relative[k]].form == "box") { continue; }
             for (var i = 0; i < state.stacks.length; i++) {
               for (var j = 0; j < state.stacks[i].length - 1; j++) {
                 if (state.stacks[i][j] == relative[k]) {
@@ -351,6 +343,7 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
               } 
             }
           }
+          matchingObjects.add("floor");
         break;
         case "inside": 
           for (var k = 0; k < relative.length; k++) {
@@ -367,6 +360,13 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
 
         case "above": 
           for (var k = 0; k < relative.length; k++) {
+            if (relative[k] == "floor") {
+              var orig : Array<string> = original.toArray();
+              for (var l = 0; l < orig.length; l++) {
+                matchingObjects.add(orig[l]);
+              }
+              break;
+            }
             for (var i = 0; i < state.stacks.length; i++) {
               for (var j = 0; j < state.stacks[i].length - 1; j++) {
                 if (state.stacks[i][j] == relative[k]) {
@@ -442,11 +442,14 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
       var result : collections.Set<string> = new collections.Set<string>();
       var arr1 : Array<string> = set1.toArray();
       var arr2 : Array<string> = set2.toArray();
+      console.log("\n\n PRINTING ");
       for (var i = 0; i < arr1.length; i++) {
         for (var j = 0; j < arr2.length; j++) {
-          if (arr1[i] == arr2[j]) { result.add(arr1[i]); }
+          if (arr1[i] == arr2[j]) { result.add(arr1[i]); console.log("  --> " + arr1[i]); }
         }
       }
+      console.log("------------\n\n");
+
 
       return result;
     }

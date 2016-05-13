@@ -2649,13 +2649,11 @@ var Interpreter;
         var mObject;
         var mString;
         _a = initMatrix(state), mObject = _a[0], mString = _a[1];
-        //matchingObjects
         var interpretation;
         interpretation = [];
         if (cmd.command == "pick up" || cmd.command == "grasp" || cmd.command == "take") {
             var potentialObjs = traverseParseTree(cmd.entity.object, mObject, mString, state).toArray();
             for (var i = 0; i < potentialObjs.length; i++) {
-                console.log("1");
                 var obj = potentialObjs[i];
                 var lit = { polarity: true, relation: "holding", args: [obj] };
                 if (isFeasible(lit, state)) {
@@ -2668,7 +2666,6 @@ var Interpreter;
             var potentialLocs = traverseParseTree(cmd.location.entity.object, mObject, mString, state).toArray();
             if (cmd.entity == undefined) {
                 for (var i = 0; i < potentialLocs.length; i++) {
-                    console.log("2");
                     var loc = potentialLocs[i];
                     var lit = { polarity: true, relation: cmd.location.relation, args: [state.holding, loc] };
                     if (isFeasible(lit, state)) {
@@ -2678,10 +2675,8 @@ var Interpreter;
             }
             else {
                 for (var i = 0; i < potentialObjs.length; i++) {
-                    console.log("3");
                     var obj = potentialObjs[i];
                     for (var j = 0; j < potentialLocs.length; j++) {
-                        console.log("4");
                         var loc = potentialLocs[j];
                         var lit = { polarity: true, relation: cmd.location.relation, args: [obj, loc] };
                         if (isFeasible(lit, state)) {
@@ -2691,15 +2686,6 @@ var Interpreter;
                 }
             }
         }
-        /*
-        var objects : string[] = Array.prototype.concat.apply([], state.stacks);
-        var a : string = objects[Math.floor(Math.random() * objects.length)];
-        var b : string = objects[Math.floor(Math.random() * objects.length)];
-        var interpretation : DNFFormula = [[
-            {polarity: true, relation: "ontop", args: [a, "floor"]},
-            {polarity: true, relation: "holding", args: [b]}
-        ]];
-        */
         if (interpretation.length == 0) {
             return null;
         }
@@ -2765,7 +2751,7 @@ var Interpreter;
         }
         return true;
     }
-    function getPossibleObjs(obj) {
+    function getPossibleObjsTest(obj) {
         var set = new collections.Set();
         if (obj.form == "ball") {
             set.add("e");
@@ -2826,13 +2812,16 @@ var Interpreter;
     function matchingObjects(obj, mObject, mString) {
         var result = new collections.Set();
         for (var i = 0; i < mObject.length; i++) {
-            if (obj.form != null && obj.form != mObject[i].form) {
+            if (obj.form != null && obj.form != "anyform" && obj.form != mObject[i].form) {
+                console.log("Form did not match!");
                 continue;
             }
-            if (obj.size != null && obj.size != mObject[i].size) {
+            if (obj.size != null && obj.form != "anysize" && obj.size != mObject[i].size) {
+                console.log("Size did not match!");
                 continue;
             }
-            if (obj.color != null && obj.color != mObject[i].color) {
+            if (obj.color != null && obj.form != "anycolor" && obj.color != mObject[i].color) {
+                console.log("Color did not match!");
                 continue;
             }
             result.add(mString[i]);
@@ -2847,10 +2836,12 @@ var Interpreter;
     function traverseParseTree(obj, mObject, mString, state) {
         var result = new collections.Set();
         if (obj.form != null) {
+            console.log("ONLY ONE OBJECT!--------");
             return matchingObjects(obj, mObject, mString);
         }
         else {
             // the ball has a relation!
+            console.log("---------NICE PARSE TREE!");
             var object = obj.object;
             var relation = obj.location.relation;
             var relativeObject = obj.location.entity.object;
@@ -2867,8 +2858,14 @@ var Interpreter;
         switch (relation) {
             case "ontop":
                 for (var k = 0; k < relative.length; k++) {
-                    var s = relative[k];
-                    if (state.objects[s].form == "box") {
+                    if (relative[k] == "floor") {
+                        var orig = original.toArray();
+                        for (var l = 0; l < orig.length; l++) {
+                            matchingObjects.add(orig[l]);
+                        }
+                        break;
+                    }
+                    if (state.objects[relative[k]].form == "box") {
                         continue;
                     }
                     for (var i = 0; i < state.stacks.length; i++) {
@@ -2879,6 +2876,7 @@ var Interpreter;
                         }
                     }
                 }
+                matchingObjects.add("floor");
                 break;
             case "inside":
                 for (var k = 0; k < relative.length; k++) {
@@ -2896,6 +2894,13 @@ var Interpreter;
                 break;
             case "above":
                 for (var k = 0; k < relative.length; k++) {
+                    if (relative[k] == "floor") {
+                        var orig = original.toArray();
+                        for (var l = 0; l < orig.length; l++) {
+                            matchingObjects.add(orig[l]);
+                        }
+                        break;
+                    }
                     for (var i = 0; i < state.stacks.length; i++) {
                         for (var j = 0; j < state.stacks[i].length - 1; j++) {
                             if (state.stacks[i][j] == relative[k]) {
@@ -2977,13 +2982,16 @@ var Interpreter;
         var result = new collections.Set();
         var arr1 = set1.toArray();
         var arr2 = set2.toArray();
+        console.log("\n\n PRINTING ");
         for (var i = 0; i < arr1.length; i++) {
             for (var j = 0; j < arr2.length; j++) {
                 if (arr1[i] == arr2[j]) {
                     result.add(arr1[i]);
+                    console.log("  --> " + arr1[i]);
                 }
             }
         }
+        console.log("------------\n\n");
         return result;
     }
     function constructObjectNameMap(cmd, state) {
