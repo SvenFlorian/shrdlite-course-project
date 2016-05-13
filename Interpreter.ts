@@ -108,38 +108,6 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
      */
     function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula {
         // This returns a dummy interpretation involving two random objects in the world
-        //Step 1.
-
-
-        var objectNameMap : collections.Dictionary<Parser.Object,string> = constructObjectNameMap(cmd,state);
-        var aa : Parser.Object = new Object();
-        aa.size = "merp";
-        aa.form = "merp";
-        aa.color = "merp";
-
-
-
-        var b : Parser.Object = new Object();
-        b.size = "derp";
-        b.form = "derp";
-        b.color = "derp";
-        b.object = aa;
-
-        var c : Parser.Object = new Object();
-        c.size = null;
-        c.form = null;
-        c.color = null;
-        c.object = aa;
-
-
-        console.log("MERP ?: " + stringifyObject(c));
-
-        objectNameMap.setValue(aa,"aa");
-        objectNameMap.setValue(b,"b");
-
-        console.log(objectNameMap.getValue(aa));
-        console.log(objectNameMap.getValue(b));
-
 
         //Step 2.
         var interpretation : DNFFormula;
@@ -176,6 +144,10 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
         */
         return interpretation;
     }
+    function getPossibleObjs(obj : Parser.Object) : collections.Set<string> {
+      return null;
+    }
+
     function addValObjectMap(key : Parser.Object, value : string, objectNameMap : collections.Dictionary<Parser.Object, string>) {
       var oldString : string = objectNameMap.setValue(key,value);
       //if(oldString != undefined) {
