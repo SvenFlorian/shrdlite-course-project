@@ -32,26 +32,6 @@ var Interpreter;
     }
     Interpreter.stringifyLiteral = stringifyLiteral;
     function interpretCommand(cmd, state) {
-        var objectNameMap = constructObjectNameMap(cmd, state);
-        var aa = new Object();
-        aa.size = "merp";
-        aa.form = "merp";
-        aa.color = "merp";
-        var b = new Object();
-        b.size = "derp";
-        b.form = "derp";
-        b.color = "derp";
-        b.object = aa;
-        var c = new Object();
-        c.size = null;
-        c.form = null;
-        c.color = null;
-        c.object = aa;
-        console.log("MERP ?: " + stringifyObject(c));
-        objectNameMap.setValue(aa, "aa");
-        objectNameMap.setValue(b, "b");
-        console.log(objectNameMap.getValue(aa));
-        console.log(objectNameMap.getValue(b));
         var interpretation;
         if (cmd.command == "pick up" || cmd.command == "grasp" || cmd.command == "take") {
             var a = objectNameMap.getValue(cmd.entity.object);
@@ -76,6 +56,9 @@ var Interpreter;
                 ]];
         }
         return interpretation;
+    }
+    function getPossibleObjs(obj) {
+        return null;
     }
     function addValObjectMap(key, value, objectNameMap) {
         var oldString = objectNameMap.setValue(key, value);
