@@ -109,7 +109,37 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
     function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula {
         // This returns a dummy interpretation involving two random objects in the world
         //Step 1.
+
+
         var objectNameMap : collections.Dictionary<Parser.Object,string> = constructObjectNameMap(cmd,state);
+        var aa : Parser.Object = new Object();
+        aa.size = "merp";
+        aa.form = "merp";
+        aa.color = "merp";
+
+
+
+        var b : Parser.Object = new Object();
+        b.size = "derp";
+        b.form = "derp";
+        b.color = "derp";
+        b.object = aa;
+
+        var c : Parser.Object = new Object();
+        c.size = null;
+        c.form = null;
+        c.color = null;
+        c.object = aa;
+
+
+        console.log("MERP ?: " + stringifyObject(c));
+
+        objectNameMap.setValue(aa,"aa");
+        objectNameMap.setValue(b,"b");
+
+        console.log(objectNameMap.getValue(aa));
+        console.log(objectNameMap.getValue(b));
+
 
         //Step 2.
         var interpretation : DNFFormula;
@@ -134,9 +164,13 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
           if (cmd.entity == undefined){ //does this work? should refer to the case of "it"
             objectToMove = state.holding;
           }else{ // if not refering to "it"
+            console.log("cmd entity == defined");
             objectToMove = objectNameMap.getValue(cmd.entity.object);
           }
+            console.log("stringify object :" + stringifyObject(cmd.location.entity.object));
+            console.log("stringify object2 :" + stringifyObject(cmd.entity.object));
             var newLocation : string = objectNameMap.getValue(cmd.location.entity.object);
+
             interpretation = [[
                 {polarity: true, relation: cmd.location.relation, args: [objectToMove, newLocation]}
             ]];
@@ -159,10 +193,21 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
       //  throw new Error("ambiguity between " + value + " and " + oldString);
       //}
     }
+    function stringifyObject(obj : Parser.Object) : string {
+      if (obj == null) {
+        return "";
+      }else{
+        if(obj.size == null || obj.form == null || obj.size == null){
+          return stringifyObject(obj.object);
+        } else {
+          return obj.color + obj.form + obj.size;
+        }
+      }
+    }
     function constructObjectNameMap(cmd : Parser.Command, state : WorldState) : collections.Dictionary<Parser.Object,string>
     {
-      var objectNameMap : collections.Dictionary<Parser.Object,string> = new collections.Dictionary<Parser.Object,string>();
 
+      var objectNameMap : collections.Dictionary<Parser.Object,string> = new collections.Dictionary<Parser.Object,string>(stringifyObject);
       var i : number = 0;
       var obj : Parser.Object = cmd.entity.object;
       var name : string;
