@@ -2645,50 +2645,41 @@ var Interpreter;
      */
     function interpretCommand(cmd, state) {
         // This returns a dummy interpretation involving two random objects in the world
-        //Step 1.
-        var objectNameMap = constructObjectNameMap(cmd, state);
-        var aa = new Object();
-        aa.size = "merp";
-        aa.form = "merp";
-        aa.color = "merp";
-        var b = new Object();
-        b.size = "derp";
-        b.form = "derp";
-        b.color = "derp";
-        b.object = aa;
-        var c = new Object();
-        c.size = null;
-        c.form = null;
-        c.color = null;
-        c.object = aa;
-        console.log("MERP ?: " + stringifyObject(c));
-        objectNameMap.setValue(aa, "aa");
-        objectNameMap.setValue(b, "b");
-        console.log(objectNameMap.getValue(aa));
-        console.log(objectNameMap.getValue(b));
         //Step 2.
         var interpretation;
+        interpretation = [];
         if (cmd.command == "pick up" || cmd.command == "grasp" || cmd.command == "take") {
-            var a = objectNameMap.getValue(cmd.entity.object);
-            interpretation = [[
-                    { polarity: true, relation: "holding", args: [a] }
-                ]];
+            var potentialObjs = getPossibleObjs(cmd.entity.object).toArray();
+            for (var i = 0; i < potentialObjs.length; i++) {
+                console.log("1");
+                var obj = potentialObjs[i];
+                var lit = { polarity: true, relation: "holding", args: [obj] };
+                interpretation.push([lit]);
+            }
         }
         else if (cmd.command == "move" || cmd.command == "put" || cmd.command == "drop") {
-            var objectToMove;
+            var potentialObjs = getPossibleObjs(cmd.entity.object).toArray();
+            var potentialLocs = getPossibleObjs(cmd.location.entity.object).toArray();
             if (cmd.entity == undefined) {
-                objectToMove = state.holding;
+                for (var i = 0; i < potentialLocs.length; i++) {
+                    console.log("2");
+                    var loc = potentialLocs[i];
+                    var lit = { polarity: true, relation: cmd.location.relation, args: [state.holding, loc] };
+                    interpretation.push([lit]);
+                }
             }
             else {
-                console.log("cmd entity == defined");
-                objectToMove = objectNameMap.getValue(cmd.entity.object);
+                for (var i = 0; i < potentialObjs.length; i++) {
+                    console.log("3");
+                    var obj = potentialObjs[i];
+                    for (var j = 0; j < potentialLocs.length; j++) {
+                        console.log("4");
+                        var loc = potentialLocs[j];
+                        var lit = { polarity: true, relation: cmd.location.relation, args: [obj, loc] };
+                        interpretation.push([lit]);
+                    }
+                }
             }
-            console.log("stringify object :" + stringifyObject(cmd.location.entity.object));
-            console.log("stringify object2 :" + stringifyObject(cmd.entity.object));
-            var newLocation = objectNameMap.getValue(cmd.location.entity.object);
-            interpretation = [[
-                    { polarity: true, relation: cmd.location.relation, args: [objectToMove, newLocation] }
-                ]];
         }
         /*
         var objects : string[] = Array.prototype.concat.apply([], state.stacks);
@@ -2699,7 +2690,23 @@ var Interpreter;
             {polarity: true, relation: "holding", args: [b]}
         ]];
         */
+        if (interpretation.length == 0) {
+            return null;
+        }
         return interpretation;
+    }
+    function getPossibleObjs(obj) {
+        var set = new collections.Set();
+        if (obj.form == "ball") {
+            set.add("e");
+            set.add("f");
+        }
+        else if (obj.form == "box") {
+            set.add("k");
+            set.add("m");
+            set.add("l");
+        }
+        return set;
     }
     function addValObjectMap(key, value, objectNameMap) {
         var oldString = objectNameMap.setValue(key, value);

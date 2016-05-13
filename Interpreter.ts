@@ -108,42 +108,43 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
      */
     function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula {
         // This returns a dummy interpretation involving two random objects in the world
-
         //Step 2.
+
         var interpretation : DNFFormula;
+        interpretation = [
+            ];
         if(cmd.command == "pick up" || cmd.command == "grasp" || cmd.command == "take") {
-          var a : string = objectNameMap.getValue(cmd.entity.object);
-          interpretation = [[
-              {polarity: true, relation: "holding", args: [a]}
-          ]];
-        }else if (cmd.command == "move" || cmd.command == "put" || cmd.command == "drop") {
-          var objectToMove : string;
-
-          //goal 1: cmd.object , cmd.object.location.relation , cmd.object.location.entity.object;
-          //goal 2: cmd.object.object, cmd.object.object.location.relation, cmd.object.object.location.entity.object
-          //goal 3: cmd.object.location.entity.object , cmd.object.location.entity.object.location.relation, cmd.object.location.entity.object.location.entity.object
-
-          // Goal 1: Find out which object it's referring to
-          // Goal 2: Find out which object it is relating to
-          // Goal 3: Make the relation happen
-
-          // aka only make the highest level relation happen, the others are for specifying
-
-          if (cmd.entity == undefined){ //does this work? should refer to the case of "it"
-            objectToMove = state.holding;
-          }else{ // if not refering to "it"
-            console.log("cmd entity == defined");
-            objectToMove = objectNameMap.getValue(cmd.entity.object);
+          var potentialObjs : Array<string> = getPossibleObjs(cmd.entity.object).toArray();
+          for(var i = 0; i < potentialObjs.length; i++) {
+            console.log("1");
+            var obj : string = potentialObjs[i];
+            var lit : Literal = {polarity: true, relation: "holding", args: [obj]};
+            interpretation.push([lit]);
           }
-            console.log("stringify object :" + stringifyObject(cmd.location.entity.object));
-            console.log("stringify object2 :" + stringifyObject(cmd.entity.object));
-            var newLocation : string = objectNameMap.getValue(cmd.location.entity.object);
 
-            interpretation = [[
-                {polarity: true, relation: cmd.location.relation, args: [objectToMove, newLocation]}
-            ]];
+        }else if (cmd.command == "move" || cmd.command == "put" || cmd.command == "drop") {
+          var potentialObjs : Array<string> = getPossibleObjs(cmd.entity.object).toArray();
+          var potentialLocs : Array<string> = getPossibleObjs(cmd.location.entity.object).toArray();
+          if (cmd.entity == undefined){ //does this work? should refer to the case of "it"
+            for(var i = 0; i < potentialLocs.length; i++) {
+              console.log("2");
+              var loc : string = potentialLocs[i];
+              var lit : Literal = {polarity: true, relation: cmd.location.relation, args: [state.holding,loc]}
+              interpretation.push([lit]);
+            }
+          }else{
+            for(var i = 0; i < potentialObjs.length; i++) {
+              console.log("3");
+              var obj : string = potentialObjs[i];
+              for(var j = 0; j < potentialLocs.length; j++) {
+                console.log("4");
+                var loc : string = potentialLocs[j];
+                var lit : Literal = {polarity: true, relation: cmd.location.relation, args: [obj,loc]}
+                interpretation.push([lit]);
+              }
+            }
+          }
         }
-
         /*
         var objects : string[] = Array.prototype.concat.apply([], state.stacks);
         var a : string = objects[Math.floor(Math.random() * objects.length)];
@@ -153,10 +154,22 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
             {polarity: true, relation: "holding", args: [b]}
         ]];
         */
+        if (interpretation.length == 0) {
+          return null;
+        }
         return interpretation;
     }
     function getPossibleObjs(obj : Parser.Object) : collections.Set<string> {
-      return null;
+      var set : collections.Set<string> = new collections.Set<string>();
+      if(obj.form == "ball") {
+        set.add("e");
+        set.add("f");
+      }else if (obj.form == "box"){
+        set.add("k");
+        set.add("m");
+        set.add("l");
+      }
+      return set;
     }
 
     function addValObjectMap(key : Parser.Object, value : string, objectNameMap : collections.Dictionary<Parser.Object, string>) {

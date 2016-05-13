@@ -33,32 +33,57 @@ var Interpreter;
     Interpreter.stringifyLiteral = stringifyLiteral;
     function interpretCommand(cmd, state) {
         var interpretation;
+        interpretation = [];
         if (cmd.command == "pick up" || cmd.command == "grasp" || cmd.command == "take") {
-            var a = objectNameMap.getValue(cmd.entity.object);
-            interpretation = [[
-                    { polarity: true, relation: "holding", args: [a] }
-                ]];
+            var potentialObjs = getPossibleObjs(cmd.entity.object).toArray();
+            for (var i = 0; i < potentialObjs.length; i++) {
+                console.log("1");
+                var obj = potentialObjs[i];
+                var lit = { polarity: true, relation: "holding", args: [obj] };
+                interpretation.push([lit]);
+            }
         }
         else if (cmd.command == "move" || cmd.command == "put" || cmd.command == "drop") {
-            var objectToMove;
+            var potentialObjs = getPossibleObjs(cmd.entity.object).toArray();
+            var potentialLocs = getPossibleObjs(cmd.location.entity.object).toArray();
             if (cmd.entity == undefined) {
-                objectToMove = state.holding;
+                for (var i = 0; i < potentialLocs.length; i++) {
+                    console.log("2");
+                    var loc = potentialLocs[i];
+                    var lit = { polarity: true, relation: cmd.location.relation, args: [state.holding, loc] };
+                    interpretation.push([lit]);
+                }
             }
             else {
-                console.log("cmd entity == defined");
-                objectToMove = objectNameMap.getValue(cmd.entity.object);
+                for (var i = 0; i < potentialObjs.length; i++) {
+                    console.log("3");
+                    var obj = potentialObjs[i];
+                    for (var j = 0; j < potentialLocs.length; j++) {
+                        console.log("4");
+                        var loc = potentialLocs[j];
+                        var lit = { polarity: true, relation: cmd.location.relation, args: [obj, loc] };
+                        interpretation.push([lit]);
+                    }
+                }
             }
-            console.log("stringify object :" + stringifyObject(cmd.location.entity.object));
-            console.log("stringify object2 :" + stringifyObject(cmd.entity.object));
-            var newLocation = objectNameMap.getValue(cmd.location.entity.object);
-            interpretation = [[
-                    { polarity: true, relation: cmd.location.relation, args: [objectToMove, newLocation] }
-                ]];
+        }
+        if (interpretation.length == 0) {
+            return null;
         }
         return interpretation;
     }
     function getPossibleObjs(obj) {
-        return null;
+        var set = new collections.Set();
+        if (obj.form == "ball") {
+            set.add("e");
+            set.add("f");
+        }
+        else if (obj.form == "box") {
+            set.add("k");
+            set.add("m");
+            set.add("l");
+        }
+        return set;
     }
     function addValObjectMap(key, value, objectNameMap) {
         var oldString = objectNameMap.setValue(key, value);
