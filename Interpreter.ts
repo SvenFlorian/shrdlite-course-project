@@ -109,12 +109,16 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
     function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula {
         // This returns a dummy interpretation involving two random objects in the world
         //Step 2.
+        var mObject : Array<ObjectDefinition>;
+        var mString : Array<string>;
+        [mObject, mString] = initMatrix(state);
+        //matchingObjects
 
         var interpretation : DNFFormula;
         interpretation = [
             ];
         if(cmd.command == "pick up" || cmd.command == "grasp" || cmd.command == "take") {
-          var potentialObjs : Array<string> = getPossibleObjs(cmd.entity.object).toArray();
+          var potentialObjs : Array<string> = traverseParseTree(cmd.entity.object, mObject, mString, state).toArray();
           for(var i = 0; i < potentialObjs.length; i++) {
             console.log("1");
             var obj : string = potentialObjs[i];
@@ -123,8 +127,8 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
           }
 
         }else if (cmd.command == "move" || cmd.command == "put" || cmd.command == "drop") {
-          var potentialObjs : Array<string> = getPossibleObjs(cmd.entity.object).toArray();
-          var potentialLocs : Array<string> = getPossibleObjs(cmd.location.entity.object).toArray();
+          var potentialObjs : Array<string> = traverseParseTree(cmd.entity.object, mObject, mString, state).toArray();
+          var potentialLocs : Array<string> = traverseParseTree(cmd.location.entity.object, mObject, mString, state).toArray();
           if (cmd.entity == undefined){ //does this work? should refer to the case of "it"
             for(var i = 0; i < potentialLocs.length; i++) {
               console.log("2");
@@ -172,6 +176,16 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
       return set;
     }
 
+
+    //matrix[Parser.Object][string]
+
+    /*function getPossibledObjs(obj: Parser.Object) : Set<string> {
+      //returns a list of all world objects
+    }*/
+
+
+
+
     function addValObjectMap(key : Parser.Object, value : string, objectNameMap : collections.Dictionary<Parser.Object, string>) {
       var oldString : string = objectNameMap.setValue(key,value);
       //if(oldString != undefined) {
@@ -189,6 +203,182 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
         }
       }
     }
+
+    function initMatrix(state : WorldState) : [Array<ObjectDefinition>, Array<string>] {
+      var mObject : Array<ObjectDefinition> = new Array<ObjectDefinition>();
+      var mString : Array<string> = new Array<string>();
+      // TODO implement as a class :P
+      // Populate the "matrix" with data from the world
+      var index : number = 0;
+      for (var i = 0; i < state.stacks.length; i++) {
+        for (var j = 0; j < state.stacks[i].length; j++) {
+          mObject[index] = state.objects[state.stacks[i][j]];
+          mString[index++] = state.stacks[i][j];
+        }
+      }
+    
+      return [mObject, mString];
+    }
+
+
+
+    // input set
+    function matchingObjects(obj : Parser.Object, mObject : Array<ObjectDefinition>, mString : Array<string>) : collections.Set<string> {
+      var result : collections.Set<string> = new collections.Set<string>();
+      for (var i = 0; i < mObject.length ; i++) {
+        if (obj.form != null && obj.form != mObject[i].form) { continue; }
+        if (obj.size != null && obj.size != mObject[i].size) { continue; }
+        if (obj.color != null && obj.color != mObject[i].color) { continue; }
+        result.add(mString[i]);
+      }
+
+      return result;
+    }
+
+    /*function findObjectsInWorld(obj : Parser.Object, state : WorldState) : Set<string> {
+      var result : Set<string> = new Set<string>();
+
+    }*/
+
+
+    //var lit : Literal = {polarity: true, relation: cmd.location.relation, args: [obj,loc]}
+    function traverseParseTree(obj : Parser.Object, mObject : Array<ObjectDefinition>, mString : Array<string>, state : WorldState) : collections.Set<string> {
+      var result : collections.Set<string> = new collections.Set<string>();
+
+      if (obj.form != null) {
+        return matchingObjects(obj, mObject, mString);
+        // we have the ball
+      } else {
+        // the ball has a relation!
+        var object = obj.object;
+        var relation : string = obj.location.relation;
+        var relativeObject : Parser.Object = obj.location.entity.object;
+
+        var originalDataset : collections.Set<string> = traverseParseTree(object, mObject, mString, state);
+        var relativeDataset : collections.Set<string> = traverseParseTree(relativeObject, mObject, mString, state);
+        //originalDataset.intersect(relativeDataset);
+
+        //do something about the relation and cross out infeasible objects
+        return pruneList(originalDataset, relativeDataset, relation, state);
+      }
+    }
+
+    function pruneList(original : collections.Set<string>, relativeData : collections.Set<string>, relation : string, state : WorldState) : collections.Set<string> {
+      var matchingObjects : collections.Set<string> = new collections.Set<string>();
+      var relative : Array<string> = relativeData.toArray();
+      switch (relation) {
+        case "ontop": 
+          for (var k = 0; k < relative.length; k++) {
+            var s : string = relative[k];
+            if (state.objects[s].form == "box") { continue; }
+            for (var i = 0; i < state.stacks.length; i++) {
+              for (var j = 0; j < state.stacks[i].length - 1; j++) {
+                if (state.stacks[i][j] == relative[k]) {
+                  matchingObjects.add(state.stacks[i][j+1]);
+                }
+              } 
+            }
+          }
+        break;
+        case "inside": 
+          for (var k = 0; k < relative.length; k++) {
+            if (state.objects[relative[k]].form != "box") { continue; }
+            for (var i = 0; i < state.stacks.length; i++) {
+              for (var j = 0; j < state.stacks[i].length - 1; j++) {
+                if (state.stacks[i][j] == relative[k]) {
+                  matchingObjects.add(state.stacks[i][j+1]);
+                }
+              } 
+            }
+          }
+        break;
+
+        case "above": 
+          for (var k = 0; k < relative.length; k++) {
+            for (var i = 0; i < state.stacks.length; i++) {
+              for (var j = 0; j < state.stacks[i].length - 1; j++) {
+                if (state.stacks[i][j] == relative[k]) {
+                  for (; j < state.stacks[i].length - 1; j++) {
+                    matchingObjects.add(state.stacks[i][j+1]);
+                  }
+                  break;
+                }
+              } 
+            }
+          }
+        break;
+        case "under": 
+          for (var k = 0; k < relative.length; k++) {
+            for (var i = 0; i < state.stacks.length; i++) {
+              for (var j = 1; j < state.stacks[i].length; j++) {
+                if (state.stacks[i][j] == relative[k]) {
+                  for (var m = 0; m < j; m++) {
+                    matchingObjects.add(state.stacks[i][m]);
+                  }
+                  break;
+                }
+              } 
+            }
+          }
+        break;
+        case "leftof": 
+          var foundSomething : number = state.stacks.length;
+          for (var i = state.stacks.length - 1; i >= 0; i--) {
+            for (var j = 0; j < state.stacks[i].length; j++) {
+              for (var k = 0; k < relative.length; k++) {
+                if (state.stacks[i][j] == relative[k]) { foundSomething = i; } 
+                if (foundSomething > i) { matchingObjects.add(state.stacks[i][j]); }
+              } 
+            }
+          }
+        break;
+        case "rightof": 
+          var foundSomething : number = state.stacks.length;
+          for (var i = 0; i < state.stacks.length - 1; i++) {
+            for (var j = 0; j < state.stacks[i].length; j++) {
+              for (var k = 0; k < relative.length; k++) {
+                if (state.stacks[i][j] == relative[k]) { foundSomething = i; } 
+                if (foundSomething < i) { matchingObjects.add(state.stacks[i][j]); }
+              } 
+            }
+          }
+        break;
+        case "beside": 
+          for (var k = 0; k < relative.length; k++) {
+            for (var i = 0; i < state.stacks.length; i++) {
+              for (var j = 0; j < state.stacks[i].length; j++) {
+                if (state.stacks[i][j] == relative[k]) { 
+                  for (var m = 0; i > 0 && m < state.stacks[i-1].length; m++) {
+                    matchingObjects.add(state.stacks[i-1][m]);
+                  }
+                  for (var n = 0; i < state.stacks.length - 1 && n < state.stacks[i+1].length; n++) {
+                    matchingObjects.add(state.stacks[i+1][n]);
+                  }
+                  break; 
+                } 
+              } 
+            }
+          }
+        break;
+        default: break;
+      }
+
+      return intersectSet(original, matchingObjects);
+    }
+
+    function intersectSet(set1 : collections.Set<string>, set2 : collections.Set<string>) : collections.Set<string> {
+      var result : collections.Set<string> = new collections.Set<string>();
+      var arr1 : Array<string> = set1.toArray();
+      var arr2 : Array<string> = set2.toArray();
+      for (var i = 0; i < arr1.length; i++) {
+        for (var j = 0; j < arr2.length; j++) {
+          if (arr1[i] == arr2[j]) { result.add(arr1[i]); }
+        }
+      }
+
+      return result;
+    }
+
     function constructObjectNameMap(cmd : Parser.Command, state : WorldState) : collections.Dictionary<Parser.Object,string>
     {
 

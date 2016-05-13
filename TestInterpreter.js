@@ -2646,10 +2646,14 @@ var Interpreter;
     function interpretCommand(cmd, state) {
         // This returns a dummy interpretation involving two random objects in the world
         //Step 2.
+        var mObject;
+        var mString;
+        _a = initMatrix(state), mObject = _a[0], mString = _a[1];
+        //matchingObjects
         var interpretation;
         interpretation = [];
         if (cmd.command == "pick up" || cmd.command == "grasp" || cmd.command == "take") {
-            var potentialObjs = getPossibleObjs(cmd.entity.object).toArray();
+            var potentialObjs = traverseParseTree(cmd.entity.object, mObject, mString, state).toArray();
             for (var i = 0; i < potentialObjs.length; i++) {
                 console.log("1");
                 var obj = potentialObjs[i];
@@ -2658,8 +2662,8 @@ var Interpreter;
             }
         }
         else if (cmd.command == "move" || cmd.command == "put" || cmd.command == "drop") {
-            var potentialObjs = getPossibleObjs(cmd.entity.object).toArray();
-            var potentialLocs = getPossibleObjs(cmd.location.entity.object).toArray();
+            var potentialObjs = traverseParseTree(cmd.entity.object, mObject, mString, state).toArray();
+            var potentialLocs = traverseParseTree(cmd.location.entity.object, mObject, mString, state).toArray();
             if (cmd.entity == undefined) {
                 for (var i = 0; i < potentialLocs.length; i++) {
                     console.log("2");
@@ -2694,6 +2698,7 @@ var Interpreter;
             return null;
         }
         return interpretation;
+        var _a;
     }
     function getPossibleObjs(obj) {
         var set = new collections.Set();
@@ -2708,6 +2713,10 @@ var Interpreter;
         }
         return set;
     }
+    //matrix[Parser.Object][string]
+    /*function getPossibledObjs(obj: Parser.Object) : Set<string> {
+      //returns a list of all world objects
+    }*/
     function addValObjectMap(key, value, objectNameMap) {
         var oldString = objectNameMap.setValue(key, value);
         //if(oldString != undefined) {
@@ -2726,6 +2735,184 @@ var Interpreter;
                 return obj.color + obj.form + obj.size;
             }
         }
+    }
+    function initMatrix(state) {
+        var mObject = new Array();
+        var mString = new Array();
+        // TODO implement as a class :P
+        // Populate the "matrix" with data from the world
+        var index = 0;
+        for (var i = 0; i < state.stacks.length; i++) {
+            for (var j = 0; j < state.stacks[i].length; j++) {
+                mObject[index] = state.objects[state.stacks[i][j]];
+                mString[index++] = state.stacks[i][j];
+            }
+        }
+        return [mObject, mString];
+    }
+    // input set
+    function matchingObjects(obj, mObject, mString) {
+        var result = new collections.Set();
+        for (var i = 0; i < mObject.length; i++) {
+            if (obj.form != null && obj.form != mObject[i].form) {
+                continue;
+            }
+            if (obj.size != null && obj.size != mObject[i].size) {
+                continue;
+            }
+            if (obj.color != null && obj.color != mObject[i].color) {
+                continue;
+            }
+            result.add(mString[i]);
+        }
+        return result;
+    }
+    /*function findObjectsInWorld(obj : Parser.Object, state : WorldState) : Set<string> {
+      var result : Set<string> = new Set<string>();
+
+    }*/
+    //var lit : Literal = {polarity: true, relation: cmd.location.relation, args: [obj,loc]}
+    function traverseParseTree(obj, mObject, mString, state) {
+        var result = new collections.Set();
+        if (obj.form != null) {
+            return matchingObjects(obj, mObject, mString);
+        }
+        else {
+            // the ball has a relation!
+            var object = obj.object;
+            var relation = obj.location.relation;
+            var relativeObject = obj.location.entity.object;
+            var originalDataset = traverseParseTree(object, mObject, mString, state);
+            var relativeDataset = traverseParseTree(relativeObject, mObject, mString, state);
+            //originalDataset.intersect(relativeDataset);
+            //do something about the relation and cross out infeasible objects
+            return pruneList(originalDataset, relativeDataset, relation, state);
+        }
+    }
+    function pruneList(original, relativeData, relation, state) {
+        var matchingObjects = new collections.Set();
+        var relative = relativeData.toArray();
+        switch (relation) {
+            case "ontop":
+                for (var k = 0; k < relative.length; k++) {
+                    var s = relative[k];
+                    if (state.objects[s].form == "box") {
+                        continue;
+                    }
+                    for (var i = 0; i < state.stacks.length; i++) {
+                        for (var j = 0; j < state.stacks[i].length - 1; j++) {
+                            if (state.stacks[i][j] == relative[k]) {
+                                matchingObjects.add(state.stacks[i][j + 1]);
+                            }
+                        }
+                    }
+                }
+                break;
+            case "inside":
+                for (var k = 0; k < relative.length; k++) {
+                    if (state.objects[relative[k]].form != "box") {
+                        continue;
+                    }
+                    for (var i = 0; i < state.stacks.length; i++) {
+                        for (var j = 0; j < state.stacks[i].length - 1; j++) {
+                            if (state.stacks[i][j] == relative[k]) {
+                                matchingObjects.add(state.stacks[i][j + 1]);
+                            }
+                        }
+                    }
+                }
+                break;
+            case "above":
+                for (var k = 0; k < relative.length; k++) {
+                    for (var i = 0; i < state.stacks.length; i++) {
+                        for (var j = 0; j < state.stacks[i].length - 1; j++) {
+                            if (state.stacks[i][j] == relative[k]) {
+                                for (; j < state.stacks[i].length - 1; j++) {
+                                    matchingObjects.add(state.stacks[i][j + 1]);
+                                }
+                                break;
+                            }
+                        }
+                    }
+                }
+                break;
+            case "under":
+                for (var k = 0; k < relative.length; k++) {
+                    for (var i = 0; i < state.stacks.length; i++) {
+                        for (var j = 1; j < state.stacks[i].length; j++) {
+                            if (state.stacks[i][j] == relative[k]) {
+                                for (var m = 0; m < j; m++) {
+                                    matchingObjects.add(state.stacks[i][m]);
+                                }
+                                break;
+                            }
+                        }
+                    }
+                }
+                break;
+            case "leftof":
+                var foundSomething = state.stacks.length;
+                for (var i = state.stacks.length - 1; i >= 0; i--) {
+                    for (var j = 0; j < state.stacks[i].length; j++) {
+                        for (var k = 0; k < relative.length; k++) {
+                            if (state.stacks[i][j] == relative[k]) {
+                                foundSomething = i;
+                            }
+                            if (foundSomething > i) {
+                                matchingObjects.add(state.stacks[i][j]);
+                            }
+                        }
+                    }
+                }
+                break;
+            case "rightof":
+                var foundSomething = state.stacks.length;
+                for (var i = 0; i < state.stacks.length - 1; i++) {
+                    for (var j = 0; j < state.stacks[i].length; j++) {
+                        for (var k = 0; k < relative.length; k++) {
+                            if (state.stacks[i][j] == relative[k]) {
+                                foundSomething = i;
+                            }
+                            if (foundSomething < i) {
+                                matchingObjects.add(state.stacks[i][j]);
+                            }
+                        }
+                    }
+                }
+                break;
+            case "beside":
+                for (var k = 0; k < relative.length; k++) {
+                    for (var i = 0; i < state.stacks.length; i++) {
+                        for (var j = 0; j < state.stacks[i].length; j++) {
+                            if (state.stacks[i][j] == relative[k]) {
+                                for (var m = 0; i > 0 && m < state.stacks[i - 1].length; m++) {
+                                    matchingObjects.add(state.stacks[i - 1][m]);
+                                }
+                                for (var n = 0; i < state.stacks.length - 1 && n < state.stacks[i + 1].length; n++) {
+                                    matchingObjects.add(state.stacks[i + 1][n]);
+                                }
+                                break;
+                            }
+                        }
+                    }
+                }
+                break;
+            default: break;
+        }
+        return intersectSet(original, matchingObjects);
+    }
+    function intersectSet(set1, set2) {
+        var result = new collections.Set();
+        var arr1 = set1.toArray();
+        var arr2 = set2.toArray();
+        for (var i = 0; i < arr1.length; i++) {
+            for (var j = 0; j < arr2.length; j++) {
+                if (arr1[i] == arr2[j]) {
+                    result.add(arr1[i]);
+                }
+            }
+        }
+        return result;
     }
     function constructObjectNameMap(cmd, state) {
         var objectNameMap = new collections.Dictionary(stringifyObject);
