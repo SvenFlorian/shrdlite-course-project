@@ -328,10 +328,11 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
         case "ontop": 
           for (var k = 0; k < relative.length; k++) {
             if (relative[k] == "floor") {
-              console.log("FLOOR JUST ENTERED");
               var orig : Array<string> = original.toArray();
-              for (var l = 0; l < orig.length; l++) {
-                matchingObjects.add(orig[l]);
+              for (var l = 0; l < state.stacks.length; l++) {
+                if (state.stacks[l].length > 0) {
+                  matchingObjects.add(state.stacks[l][0]);
+                }
               }
               break;
             }
@@ -442,13 +443,14 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
       var result : collections.Set<string> = new collections.Set<string>();
       var arr1 : Array<string> = set1.toArray();
       var arr2 : Array<string> = set2.toArray();
-      console.log("\n\n PRINTING ");
+      console.log("\n PRINTING ");
       for (var i = 0; i < arr1.length; i++) {
         for (var j = 0; j < arr2.length; j++) {
+          if (arr1[i] == "e") {console.log("WHITE BALL vs " + arr2[j]);}
           if (arr1[i] == arr2[j]) { result.add(arr1[i]); console.log("  --> " + arr1[i]); }
         }
       }
-      console.log("------------\n\n");
+      console.log("------------\n");
 
 
       return result;

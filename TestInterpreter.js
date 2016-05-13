@@ -2857,10 +2857,11 @@ var Interpreter;
             case "ontop":
                 for (var k = 0; k < relative.length; k++) {
                     if (relative[k] == "floor") {
-                        console.log("FLOOR JUST ENTERED");
                         var orig = original.toArray();
-                        for (var l = 0; l < orig.length; l++) {
-                            matchingObjects.add(orig[l]);
+                        for (var l = 0; l < state.stacks.length; l++) {
+                            if (state.stacks[l].length > 0) {
+                                matchingObjects.add(state.stacks[l][0]);
+                            }
                         }
                         break;
                     }
@@ -2980,16 +2981,19 @@ var Interpreter;
         var result = new collections.Set();
         var arr1 = set1.toArray();
         var arr2 = set2.toArray();
-        console.log("\n\n PRINTING ");
+        console.log("\n PRINTING ");
         for (var i = 0; i < arr1.length; i++) {
             for (var j = 0; j < arr2.length; j++) {
+                if (arr1[i] == "e") {
+                    console.log("WHITE BALL vs " + arr2[j]);
+                }
                 if (arr1[i] == arr2[j]) {
                     result.add(arr1[i]);
                     console.log("  --> " + arr1[i]);
                 }
             }
         }
-        console.log("------------\n\n");
+        console.log("------------\n");
         return result;
     }
     function constructObjectNameMap(cmd, state) {
