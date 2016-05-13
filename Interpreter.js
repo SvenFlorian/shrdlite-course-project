@@ -33,6 +33,25 @@ var Interpreter;
     Interpreter.stringifyLiteral = stringifyLiteral;
     function interpretCommand(cmd, state) {
         var objectNameMap = constructObjectNameMap(cmd, state);
+        var aa = new Object();
+        aa.size = "merp";
+        aa.form = "merp";
+        aa.color = "merp";
+        var b = new Object();
+        b.size = "derp";
+        b.form = "derp";
+        b.color = "derp";
+        b.object = aa;
+        var c = new Object();
+        c.size = null;
+        c.form = null;
+        c.color = null;
+        c.object = aa;
+        console.log("MERP ?: " + stringifyObject(c));
+        objectNameMap.setValue(aa, "aa");
+        objectNameMap.setValue(b, "b");
+        console.log(objectNameMap.getValue(aa));
+        console.log(objectNameMap.getValue(b));
         var interpretation;
         if (cmd.command == "pick up" || cmd.command == "grasp" || cmd.command == "take") {
             var a = objectNameMap.getValue(cmd.entity.object);
@@ -46,8 +65,11 @@ var Interpreter;
                 objectToMove = state.holding;
             }
             else {
+                console.log("cmd entity == defined");
                 objectToMove = objectNameMap.getValue(cmd.entity.object);
             }
+            console.log("stringify object :" + stringifyObject(cmd.location.entity.object));
+            console.log("stringify object2 :" + stringifyObject(cmd.entity.object));
             var newLocation = objectNameMap.getValue(cmd.location.entity.object);
             interpretation = [[
                     { polarity: true, relation: cmd.location.relation, args: [objectToMove, newLocation] }
@@ -58,8 +80,21 @@ var Interpreter;
     function addValObjectMap(key, value, objectNameMap) {
         var oldString = objectNameMap.setValue(key, value);
     }
+    function stringifyObject(obj) {
+        if (obj == null) {
+            return "";
+        }
+        else {
+            if (obj.size == null || obj.form == null || obj.size == null) {
+                return stringifyObject(obj.object);
+            }
+            else {
+                return obj.color + obj.form + obj.size;
+            }
+        }
+    }
     function constructObjectNameMap(cmd, state) {
-        var objectNameMap = new collections.Dictionary();
+        var objectNameMap = new collections.Dictionary(stringifyObject);
         var i = 0;
         var obj = cmd.entity.object;
         var name;
