@@ -1,5 +1,6 @@
 ///<reference path="World.ts"/>
 ///<reference path="Parser.ts"/>
+/// <reference path="./lib/collections.ts"/>
 
 /**
 * Interpreter module
@@ -115,7 +116,7 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
         if(cmd.command == "pick up" || cmd.command == "grasp" || cmd.command == "take") {
           var a : string = objectNameMap.getValue(cmd.entity.object);
           interpretation = [[
-              {polarity: true, relation: "pickedUp", args: [a]}
+              {polarity: true, relation: "holding", args: [a]}
           ]];
         }else if (cmd.command == "move" || cmd.command == "put" || cmd.command == "drop") {
           var objectToMove : string;
@@ -153,10 +154,10 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
         return interpretation;
     }
     function addValObjectMap(key : Parser.Object, value : string, objectNameMap : collections.Dictionary<Parser.Object, string>) {
-      var oldString : string = objectNameMap.setValue(key,value)
-      if(oldString != undefined) {
-        throw new Error("ambiguity between " + value + " and " + oldString);
-      }
+      var oldString : string = objectNameMap.setValue(key,value);
+      //if(oldString != undefined) {
+      //  throw new Error("ambiguity between " + value + " and " + oldString);
+      //}
     }
     function constructObjectNameMap(cmd : Parser.Command, state : WorldState) : collections.Dictionary<Parser.Object,string>
     {
@@ -179,23 +180,45 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
         {
           position = -1;
         }
+        i++;
       }
+
       row = findRow(obj, position, state, name, objectNameMap);
-      findEntity(cmd.entity, position, row, state, objectNameMap);
+
+      var result : number = findEntity(cmd.entity, position, row, state, objectNameMap);
+      if(result == -1)
+      {
+        console.log("Such object does not exist!");
+      }
 
       return objectNameMap;
     }
-    function findEntity( entity : Parser.Entity, position : number, row : number, state : WorldState, objectNameMap : collections.Dictionary<Parser.Object, string>)
+    function findEntity( entity : Parser.Entity, position : number, row : number, state : WorldState, objectNameMap : collections.Dictionary<Parser.Object, string>) : number
     {
+      name = " ";
+      var i : number = 0;
       var obj :  Parser.Object = entity.object;
-      if((obj.object ==  null) || (obj.location == null))
+
+      //console.log("Adding: " + name + " " + obj.form + " " + obj.size + " " + obj.color);
+      if((obj.object ==  null) && (obj.location == null))
       {
+        while( i < state.stacks[position].length)
+        {
+          if(checkSingle(state.stacks[position][i], findDescription(obj, state), state))
+          {
+            name = state.stacks[position][i];
+          }
+          i++;
+        }
+
+        addValObjectMap(obj, name, objectNameMap);
         return 0;
       }
       else
       {
         if((obj.location.relation == "on top of") ||  (obj.location.relation == "above"))
         {
+          console.log("ON");
           if( findRow(obj.location.entity.object, position, state, name, objectNameMap) != -1)
           {
             return findEntity(obj.location.entity, position, row + 1, state, objectNameMap);
@@ -207,6 +230,7 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
         }
         else if((obj.location.relation == "inside") || (obj.location.relation == "under"))
         {
+          console.log("IN ");
           if(findRow(obj.location.entity.object, position, state, name, objectNameMap) != -1)
           {
             return findEntity(obj.location.entity, position, row - 1, state, objectNameMap);
@@ -218,7 +242,8 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
         }
         else if ((obj.location.relation == "left of"))
         {
-          if(checkStack(obj.object, position - 1, state, name, objectNameMap))
+          console.log("LEFT");
+          if(checkStack(obj.location.entity.object, position - 1, state, name, objectNameMap))
           {
             return findEntity(obj.location.entity, position - 1, row, state, objectNameMap);
           }
@@ -229,7 +254,8 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
         }
         else if ((obj.location.relation == "right of"))
         {
-          if(checkStack(obj.object, position + 1, state, name, objectNameMap))
+          console.log("RIGHT");
+          if(checkStack(obj.location.entity.object, position + 1, state, name, objectNameMap))
           {
             return findEntity(obj.location.entity, position + 1, row, state, objectNameMap);
           }
@@ -240,11 +266,12 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
         }
         else if(obj.location.relation == "beside")
         {
-          if(checkStack(obj.object, position - 1, state, name, objectNameMap))
+          console.log("BESIDE");
+          if(checkStack(obj.location.entity.object, position - 1, state, name, objectNameMap))
           {
             return findEntity(obj.location.entity, position - 1, row, state, objectNameMap);
           }
-          else if(checkStack(obj.object, position + 1, state, name, objectNameMap))
+          else if(checkStack(obj.location.entity.object, position + 1, state, name, objectNameMap))
           {
             return findEntity(obj.location.entity, position + 1, row, state, objectNameMap);
           }
@@ -255,25 +282,29 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
         }
         else
         {
+          console.log("NO");
           return -1;
         }
       }
     }
     // Compares the name of the object in the world with the given object to check whether they are the same one.
-    function checkSingle( obj1 : string, obj2 : ObjectDefinition, state : WorldState) : boolean
+    function checkSingle( obj1 : string, obj2 : string[], state : WorldState) : boolean
     {
       var obj : ObjectDefinition;
       obj = state.objects[obj1];
       var result : boolean = true;
-      if(obj.form != obj2.form)
+      //console.log("obj: " + obj.form + " " + obj.size + " " + obj.color);
+      //console.log("res: " + obj2[0] + " " + obj2[1] + " " + obj2[2]);
+      //console.log();
+      if((obj.form != obj2[0]) && (obj2[0] != "anyform"))
       {
         result = false;
       }
-      if((obj2.size != null) && (obj.size != null) && (obj.size != obj2.size))
+      if((obj2[1] != "0") && (obj.size != null) && (obj.size != obj2[1]))
       {
         result = false;
       }
-      if((obj2.color != null) && (obj.color != null) && (obj.color != obj2.color))
+      if((obj2[2] != "0") && (obj.color != null) && (obj.color != obj2[2]))
       {
         result = false;
       }
@@ -282,23 +313,28 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
     // If the object refers to another object and a location, and the referred object refers to other ones
     // finding the object itself (as in the form and shape) is hard and the object cannot be compared
     // with the name of the object in the world. This function finds the definition of the object.
-    function findDescription(obj : Parser.Object, state : WorldState) : ObjectDefinition
+    function findDescription(obj : Parser.Object, state : WorldState) : string[]
     {
-      var result : ObjectDefinition;
-      if(obj.form == null)
+      var st : string = "";
+      var result : string[] = ["anyform","0","0"];
+
+      if((obj.form == null) && (obj.color == null) && (obj.size == null))
       {
         return findDescription(obj.object, state);
       }
       else
       {
-        result.form = obj.form;
+        if(obj.form != null)
+        {
+          result[0] = obj.form;
+        }
         if(obj.size != null)
         {
-          result.size = obj.size;
+          result[1] = obj.size;
         }
         if(obj.color != null)
         {
-          result.color = obj.color;
+          result[2] = obj.color;
         }
         return result;
       }
@@ -307,33 +343,38 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
     function checkStack(obj : Parser.Object, position : number, state : WorldState, name : string, objectNameMap : collections.Dictionary<Parser.Object, string>) : boolean
     {
       var i : number = 0;
+      var res : boolean = false;
+      var st : string[];
       while( i < state.stacks[position].length)
       {
+        //console.log(state.objects[state.stacks[position][i]].form);
+        st = findDescription(obj, state);
+        //console.log(st);
         if(checkSingle(state.stacks[position][i], findDescription(obj, state), state))
         {
+          console.log("here");
           name = state.stacks[position][i];
-          addValObjectMap(obj, name, objectNameMap);
-          return true;
+          res = true;
         }
+        i++;
       }
-      name = "";
-      return false;
+      return res;
     }
     // Finds the row in the stack of the given object. Returns -1 if the object is not in the stack.
     function findRow(obj : Parser.Object, position : number, state : WorldState, name : string, objectNameMap : collections.Dictionary<Parser.Object, string>) : number
     {
       var i : number = 0;
+      var res : number = -1;
       while (i < state.stacks[position].length)
       {
         if(checkSingle(state.stacks[position][i], findDescription(obj, state), state))
         {
           name = state.stacks[position][i];
-          addValObjectMap(obj, name, objectNameMap);
-          return i;
+          res = i;
         }
+        i++;
       }
-      name = "";
-      return -1;
+      return res;
     }
 
 }

@@ -37,7 +37,7 @@ var Interpreter;
         if (cmd.command == "pick up" || cmd.command == "grasp" || cmd.command == "take") {
             var a = objectNameMap.getValue(cmd.entity.object);
             interpretation = [[
-                    { polarity: true, relation: "pickedUp", args: [a] }
+                    { polarity: true, relation: "holding", args: [a] }
                 ]];
         }
         else if (cmd.command == "move" || cmd.command == "put" || cmd.command == "drop") {
@@ -57,9 +57,6 @@ var Interpreter;
     }
     function addValObjectMap(key, value, objectNameMap) {
         var oldString = objectNameMap.setValue(key, value);
-        if (oldString != undefined) {
-            throw new Error("ambiguity between " + value + " and " + oldString);
-        }
     }
     function constructObjectNameMap(cmd, state) {
         var objectNameMap = new collections.Dictionary();
@@ -76,18 +73,32 @@ var Interpreter;
             else {
                 position = -1;
             }
+            i++;
         }
         row = findRow(obj, position, state, name, objectNameMap);
-        findEntity(cmd.entity, position, row, state, objectNameMap);
+        var result = findEntity(cmd.entity, position, row, state, objectNameMap);
+        if (result == -1) {
+            console.log("Such object does not exist!");
+        }
         return objectNameMap;
     }
     function findEntity(entity, position, row, state, objectNameMap) {
+        name = " ";
+        var i = 0;
         var obj = entity.object;
-        if ((obj.object == null) || (obj.location == null)) {
+        if ((obj.object == null) && (obj.location == null)) {
+            while (i < state.stacks[position].length) {
+                if (checkSingle(state.stacks[position][i], findDescription(obj, state), state)) {
+                    name = state.stacks[position][i];
+                }
+                i++;
+            }
+            addValObjectMap(obj, name, objectNameMap);
             return 0;
         }
         else {
             if ((obj.location.relation == "on top of") || (obj.location.relation == "above")) {
+                console.log("ON");
                 if (findRow(obj.location.entity.object, position, state, name, objectNameMap) != -1) {
                     return findEntity(obj.location.entity, position, row + 1, state, objectNameMap);
                 }
@@ -96,6 +107,7 @@ var Interpreter;
                 }
             }
             else if ((obj.location.relation == "inside") || (obj.location.relation == "under")) {
+                console.log("IN ");
                 if (findRow(obj.location.entity.object, position, state, name, objectNameMap) != -1) {
                     return findEntity(obj.location.entity, position, row - 1, state, objectNameMap);
                 }
@@ -104,7 +116,8 @@ var Interpreter;
                 }
             }
             else if ((obj.location.relation == "left of")) {
-                if (checkStack(obj.object, position - 1, state, name, objectNameMap)) {
+                console.log("LEFT");
+                if (checkStack(obj.location.entity.object, position - 1, state, name, objectNameMap)) {
                     return findEntity(obj.location.entity, position - 1, row, state, objectNameMap);
                 }
                 else {
@@ -112,7 +125,8 @@ var Interpreter;
                 }
             }
             else if ((obj.location.relation == "right of")) {
-                if (checkStack(obj.object, position + 1, state, name, objectNameMap)) {
+                console.log("RIGHT");
+                if (checkStack(obj.location.entity.object, position + 1, state, name, objectNameMap)) {
                     return findEntity(obj.location.entity, position + 1, row, state, objectNameMap);
                 }
                 else {
@@ -120,10 +134,11 @@ var Interpreter;
                 }
             }
             else if (obj.location.relation == "beside") {
-                if (checkStack(obj.object, position - 1, state, name, objectNameMap)) {
+                console.log("BESIDE");
+                if (checkStack(obj.location.entity.object, position - 1, state, name, objectNameMap)) {
                     return findEntity(obj.location.entity, position - 1, row, state, objectNameMap);
                 }
-                else if (checkStack(obj.object, position + 1, state, name, objectNameMap)) {
+                else if (checkStack(obj.location.entity.object, position + 1, state, name, objectNameMap)) {
                     return findEntity(obj.location.entity, position + 1, row, state, objectNameMap);
                 }
                 else {
@@ -131,6 +146,7 @@ var Interpreter;
                 }
             }
             else {
+                console.log("NO");
                 return -1;
             }
         }
@@ -139,55 +155,61 @@ var Interpreter;
         var obj;
         obj = state.objects[obj1];
         var result = true;
-        if (obj.form != obj2.form) {
+        if ((obj.form != obj2[0]) && (obj2[0] != "anyform")) {
             result = false;
         }
-        if ((obj2.size != null) && (obj.size != null) && (obj.size != obj2.size)) {
+        if ((obj2[1] != "0") && (obj.size != null) && (obj.size != obj2[1])) {
             result = false;
         }
-        if ((obj2.color != null) && (obj.color != null) && (obj.color != obj2.color)) {
+        if ((obj2[2] != "0") && (obj.color != null) && (obj.color != obj2[2])) {
             result = false;
         }
         return result;
     }
     function findDescription(obj, state) {
-        var result;
-        if (obj.form == null) {
+        var st = "";
+        var result = ["anyform", "0", "0"];
+        if ((obj.form == null) && (obj.color == null) && (obj.size == null)) {
             return findDescription(obj.object, state);
         }
         else {
-            result.form = obj.form;
+            if (obj.form != null) {
+                result[0] = obj.form;
+            }
             if (obj.size != null) {
-                result.size = obj.size;
+                result[1] = obj.size;
             }
             if (obj.color != null) {
-                result.color = obj.color;
+                result[2] = obj.color;
             }
             return result;
         }
     }
     function checkStack(obj, position, state, name, objectNameMap) {
         var i = 0;
+        var res = false;
+        var st;
         while (i < state.stacks[position].length) {
+            st = findDescription(obj, state);
             if (checkSingle(state.stacks[position][i], findDescription(obj, state), state)) {
+                console.log("here");
                 name = state.stacks[position][i];
-                addValObjectMap(obj, name, objectNameMap);
-                return true;
+                res = true;
             }
+            i++;
         }
-        name = "";
-        return false;
+        return res;
     }
     function findRow(obj, position, state, name, objectNameMap) {
         var i = 0;
+        var res = -1;
         while (i < state.stacks[position].length) {
             if (checkSingle(state.stacks[position][i], findDescription(obj, state), state)) {
                 name = state.stacks[position][i];
-                addValObjectMap(obj, name, objectNameMap);
-                return i;
+                res = i;
             }
+            i++;
         }
-        name = "";
-        return -1;
+        return res;
     }
 })(Interpreter || (Interpreter = {}));
