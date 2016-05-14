@@ -2665,6 +2665,8 @@ var Interpreter;
         else if (cmd.command == "move" || cmd.command == "put" || cmd.command == "drop") {
             var potentialObjs = traverseParseTree(cmd.entity.object, mObject, mString, state).toArray();
             var potentialLocs = traverseParseTree(cmd.location.entity.object, mObject, mString, state).toArray();
+            console.log(potentialObjs.toString());
+            console.log(potentialLocs.toString());
             if (cmd.entity == undefined) {
                 for (var i = 0; i < potentialLocs.length; i++) {
                     var loc = potentialLocs[i];
@@ -2681,6 +2683,7 @@ var Interpreter;
                         var loc = potentialLocs[j];
                         var lit = { polarity: true, relation: cmd.location.relation, args: [obj, loc] };
                         if (isFeasible(lit, state)) {
+                            console.log(stringifyLiteral(lit));
                             interpretation.push([lit]);
                         }
                     }
@@ -2688,6 +2691,7 @@ var Interpreter;
             }
         }
         if (interpretation.length == 0) {
+            console.log("null!");
             return null;
         }
         return interpretation;
@@ -2697,11 +2701,26 @@ var Interpreter;
         if (lit.relation == "holding" && lit.args[0] == "floor") {
             return false;
         } //otherwise there are 2 arguments
-        var obj1 = state.objects[lit.args[0]];
-        var obj2 = state.objects[lit.args[1]];
+        var obj1; //special case for floor, since it doesnt exist in the worldstate
+        var obj2;
+        if (lit.args[0] == "floor") {
+            obj1 = new Object();
+            obj1.form = "floor";
+        }
+        else {
+            obj1 = state.objects[lit.args[0]];
+        }
+        if (lit.args[1] == "floor") {
+            obj2 = new Object();
+            obj2.form = "floor";
+        }
+        else {
+            obj2 = state.objects[lit.args[1]];
+        }
         if (lit.args[1] == lit.args[0]) {
             return false;
         }
+        console.log("RELATION : " + lit.relation);
         switch (lit.relation) {
             case "ontop":
                 if (obj2.form != "table" && obj2.form != "floor") {
@@ -2718,6 +2737,7 @@ var Interpreter;
                 else if ((obj1.size == obj2.size && obj1.form != "ball") || (obj1.size == "large" && obj2.size == "small")) {
                     return false;
                 }
+                console.log("no crash!");
                 break;
             case "above":
                 if (obj2.form == "ball") {
@@ -2776,12 +2796,6 @@ var Interpreter;
     /*function getPossibledObjs(obj: Parser.Object) : Set<string> {
       //returns a list of all world objects
     }*/
-    function addValObjectMap(key, value, objectNameMap) {
-        var oldString = objectNameMap.setValue(key, value);
-        //if(oldString != undefined) {
-        //  throw new Error("ambiguity between " + value + " and " + oldString);
-        //}
-    }
     function stringifyObject(obj) {
         if (obj == null) {
             return "";
@@ -3496,10 +3510,21 @@ ExampleWorlds["impossible"] = {
         "this is just an impossible world"
     ]
 };
+<<<<<<< HEAD
 /*
 {world: "small",
      utterance: "put a ball on a box",
      interpretations: []
+=======
+var allTestCases = [
+    { world: "small",
+        utterance: "put a red box on the floor",
+        interpretations: [["ontop(l,floor)"]]
+    },
+    { world: "small",
+        utterance: "put a ball on a box",
+        interpretations: []
+>>>>>>> b327a9593d4b3f52dfe91e7bd036b10b52e387ab
     },
 
     {world: "small",

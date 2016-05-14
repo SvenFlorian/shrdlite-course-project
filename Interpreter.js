@@ -51,6 +51,8 @@ var Interpreter;
         else if (cmd.command == "move" || cmd.command == "put" || cmd.command == "drop") {
             var potentialObjs = traverseParseTree(cmd.entity.object, mObject, mString, state).toArray();
             var potentialLocs = traverseParseTree(cmd.location.entity.object, mObject, mString, state).toArray();
+            console.log(potentialObjs.toString());
+            console.log(potentialLocs.toString());
             if (cmd.entity == undefined) {
                 for (var i = 0; i < potentialLocs.length; i++) {
                     var loc = potentialLocs[i];
@@ -67,6 +69,7 @@ var Interpreter;
                         var loc = potentialLocs[j];
                         var lit = { polarity: true, relation: cmd.location.relation, args: [obj, loc] };
                         if (isFeasible(lit, state)) {
+                            console.log(stringifyLiteral(lit));
                             interpretation.push([lit]);
                         }
                     }
@@ -83,11 +86,26 @@ var Interpreter;
         if (lit.relation == "holding" && lit.args[0] == "floor") {
             return false;
         }
-        var obj1 = state.objects[lit.args[0]];
-        var obj2 = state.objects[lit.args[1]];
+        var obj1;
+        var obj2;
+        if (lit.args[0] == "floor") {
+            obj1 = new Object();
+            obj1.form = "floor";
+        }
+        else {
+            obj1 = state.objects[lit.args[0]];
+        }
+        if (lit.args[1] == "floor") {
+            obj2 = new Object();
+            obj2.form = "floor";
+        }
+        else {
+            obj2 = state.objects[lit.args[1]];
+        }
         if (lit.args[1] == lit.args[0]) {
             return false;
         }
+        console.log("RELATION : " + lit.relation);
         switch (lit.relation) {
             case "ontop":
                 if (obj2.form != "table" && lit.args[1] != "floor") {
@@ -104,6 +122,7 @@ var Interpreter;
                 else if ((obj1.size == obj2.size && obj1.form != "ball") || (obj1.size == "large" && obj2.size == "small")) {
                     return false;
                 }
+                console.log("no crash!");
                 break;
             case "above":
                 if (obj2.form == "ball") {
@@ -157,9 +176,6 @@ var Interpreter;
             set.add("m");
         }
         return set;
-    }
-    function addValObjectMap(key, value, objectNameMap) {
-        var oldString = objectNameMap.setValue(key, value);
     }
     function stringifyObject(obj) {
         if (obj == null) {
