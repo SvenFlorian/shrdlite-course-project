@@ -2604,7 +2604,8 @@ var Interpreter;
             try {
                 var result = parseresult;
                 result.interpretation = interpretCommand(result.parse, currentState);
-                console.log("yo yo" + stringify(result));
+                stringify(result);
+                //console.log("InterpretationResult: " + stringify(result));
                 interpretations.push(result);
             }
             catch (err) {
