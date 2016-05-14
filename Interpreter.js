@@ -7,7 +7,6 @@ var Interpreter;
             try {
                 var result = parseresult;
                 result.interpretation = interpretCommand(result.parse, currentState);
-                stringify(result);
                 interpretations.push(result);
             }
             catch (err) {
@@ -63,7 +62,7 @@ var Interpreter;
             }
         }
         if (interpretation.length == 0) {
-            return null;
+            throw new Error("No interpretation found");
         }
         return interpretation;
         var _a;

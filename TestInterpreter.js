@@ -2604,8 +2604,6 @@ var Interpreter;
             try {
                 var result = parseresult;
                 result.interpretation = interpretCommand(result.parse, currentState);
-                stringify(result); // we need to call this function to make the tests work for some reason.
-                //console.log("InterpretationResult: " + stringify(result));
                 interpretations.push(result);
             }
             catch (err) {
@@ -2670,7 +2668,7 @@ var Interpreter;
             }
         }
         if (interpretation.length == 0) {
-            return null;
+            throw new Error("No interpretation found");
         }
         return interpretation;
         var _a;
@@ -2800,6 +2798,7 @@ var Interpreter;
     function pruneList(original, relativeData, relation, state) {
         var matchingObjects = new collections.Set();
         var relative = relativeData.toArray();
+        //loop through every object in the stack and find the objects that fulfill the relation
         switch (relation) {
             case "ontop":
                 for (var k = 0; k < relative.length; k++) {
