@@ -2646,6 +2646,7 @@ var Interpreter;
     function interpretCommand(cmd, state) {
         // This returns a dummy interpretation involving two random objects in the world
         //Step 2.
+        console.log("start");
         var mObject;
         var mString;
         _a = initMatrix(state), mObject = _a[0], mString = _a[1];
@@ -2857,7 +2858,6 @@ var Interpreter;
             case "ontop":
                 for (var k = 0; k < relative.length; k++) {
                     if (relative[k] == "floor") {
-                        var orig = original.toArray();
                         for (var l = 0; l < state.stacks.length; l++) {
                             if (state.stacks[l].length > 0) {
                                 matchingObjects.add(state.stacks[l][0]);
@@ -2995,172 +2995,6 @@ var Interpreter;
         }
         console.log("------------\n");
         return result;
-    }
-    function constructObjectNameMap(cmd, state) {
-        var objectNameMap = new collections.Dictionary(stringifyObject);
-        var i = 0;
-        var obj = cmd.entity.object;
-        var name;
-        var row;
-        var position;
-        while (i < state.stacks.length) {
-            if (checkStack(obj, i, state, name, objectNameMap)) {
-                position = i;
-                break;
-            }
-            else {
-                position = -1;
-            }
-            i++;
-        }
-        row = findRow(obj, position, state, name, objectNameMap);
-        var result = findEntity(cmd.entity, position, row, state, objectNameMap);
-        if (result == -1) {
-            console.log("Such object does not exist!");
-        }
-        return objectNameMap;
-    }
-    function findEntity(entity, position, row, state, objectNameMap) {
-        name = " ";
-        var i = 0;
-        var obj = entity.object;
-        //console.log("Adding: " + name + " " + obj.form + " " + obj.size + " " + obj.color);
-        if ((obj.object == null) && (obj.location == null)) {
-            while (i < state.stacks[position].length) {
-                if (checkSingle(state.stacks[position][i], findDescription(obj, state), state)) {
-                    name = state.stacks[position][i];
-                }
-                i++;
-            }
-            addValObjectMap(obj, name, objectNameMap);
-            return 0;
-        }
-        else {
-            if ((obj.location.relation == "on top of") || (obj.location.relation == "above")) {
-                console.log("ON");
-                if (findRow(obj.location.entity.object, position, state, name, objectNameMap) != -1) {
-                    return findEntity(obj.location.entity, position, row + 1, state, objectNameMap);
-                }
-                else {
-                    return -1;
-                }
-            }
-            else if ((obj.location.relation == "inside") || (obj.location.relation == "under")) {
-                console.log("IN ");
-                if (findRow(obj.location.entity.object, position, state, name, objectNameMap) != -1) {
-                    return findEntity(obj.location.entity, position, row - 1, state, objectNameMap);
-                }
-                else {
-                    return -1;
-                }
-            }
-            else if ((obj.location.relation == "left of")) {
-                console.log("LEFT");
-                if (checkStack(obj.location.entity.object, position - 1, state, name, objectNameMap)) {
-                    return findEntity(obj.location.entity, position - 1, row, state, objectNameMap);
-                }
-                else {
-                    return -1;
-                }
-            }
-            else if ((obj.location.relation == "right of")) {
-                console.log("RIGHT");
-                if (checkStack(obj.location.entity.object, position + 1, state, name, objectNameMap)) {
-                    return findEntity(obj.location.entity, position + 1, row, state, objectNameMap);
-                }
-                else {
-                    return -1;
-                }
-            }
-            else if (obj.location.relation == "beside") {
-                console.log("BESIDE");
-                if (checkStack(obj.location.entity.object, position - 1, state, name, objectNameMap)) {
-                    return findEntity(obj.location.entity, position - 1, row, state, objectNameMap);
-                }
-                else if (checkStack(obj.location.entity.object, position + 1, state, name, objectNameMap)) {
-                    return findEntity(obj.location.entity, position + 1, row, state, objectNameMap);
-                }
-                else {
-                    return -1;
-                }
-            }
-            else {
-                console.log("NO");
-                return -1;
-            }
-        }
-    }
-    // Compares the name of the object in the world with the given object to check whether they are the same one.
-    function checkSingle(obj1, obj2, state) {
-        var obj;
-        obj = state.objects[obj1];
-        var result = true;
-        //console.log("obj: " + obj.form + " " + obj.size + " " + obj.color);
-        //console.log("res: " + obj2[0] + " " + obj2[1] + " " + obj2[2]);
-        //console.log();
-        if ((obj.form != obj2[0]) && (obj2[0] != "anyform")) {
-            result = false;
-        }
-        if ((obj2[1] != "0") && (obj.size != null) && (obj.size != obj2[1])) {
-            result = false;
-        }
-        if ((obj2[2] != "0") && (obj.color != null) && (obj.color != obj2[2])) {
-            result = false;
-        }
-        return result;
-    }
-    // If the object refers to another object and a location, and the referred object refers to other ones
-    // finding the object itself (as in the form and shape) is hard and the object cannot be compared
-    // with the name of the object in the world. This function finds the definition of the object.
-    function findDescription(obj, state) {
-        var st = "";
-        var result = ["anyform", "0", "0"];
-        if ((obj.form == null) && (obj.color == null) && (obj.size == null)) {
-            return findDescription(obj.object, state);
-        }
-        else {
-            if (obj.form != null) {
-                result[0] = obj.form;
-            }
-            if (obj.size != null) {
-                result[1] = obj.size;
-            }
-            if (obj.color != null) {
-                result[2] = obj.color;
-            }
-            return result;
-        }
-    }
-    // Checks whether the given object is in a certain stack or not.
-    function checkStack(obj, position, state, name, objectNameMap) {
-        var i = 0;
-        var res = false;
-        var st;
-        while (i < state.stacks[position].length) {
-            //console.log(state.objects[state.stacks[position][i]].form);
-            st = findDescription(obj, state);
-            //console.log(st);
-            if (checkSingle(state.stacks[position][i], findDescription(obj, state), state)) {
-                console.log("here");
-                name = state.stacks[position][i];
-                res = true;
-            }
-            i++;
-        }
-        return res;
-    }
-    // Finds the row in the stack of the given object. Returns -1 if the object is not in the stack.
-    function findRow(obj, position, state, name, objectNameMap) {
-        var i = 0;
-        var res = -1;
-        while (i < state.stacks[position].length) {
-            if (checkSingle(state.stacks[position][i], findDescription(obj, state), state)) {
-                name = state.stacks[position][i];
-                res = i;
-            }
-            i++;
-        }
-        return res;
     }
 })(Interpreter || (Interpreter = {}));
 ///<reference path="World.ts"/>
