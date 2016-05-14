@@ -43,7 +43,7 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
             try {
                 var result : InterpretationResult = <InterpretationResult>parseresult;
                 result.interpretation = interpretCommand(result.parse, currentState);
-                console.log("yo yo" + stringify(result));
+                console.log("InterpretationResult: " + stringify(result));
                 interpretations.push(result);
             } catch(err) {
                 errors.push(err);
@@ -110,7 +110,6 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
     function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula {
         // This returns a dummy interpretation involving two random objects in the world
         //Step 2.
-        console.log("start");
         var mObject : Array<ObjectDefinition>;
         var mString : Array<string>;
         [mObject, mString] = initMatrix(state);
@@ -131,8 +130,6 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
         }else if (cmd.command == "move" || cmd.command == "put" || cmd.command == "drop") {
           var potentialObjs : Array<string> = traverseParseTree(cmd.entity.object, mObject, mString, state).toArray();
           var potentialLocs : Array<string> = traverseParseTree(cmd.location.entity.object, mObject, mString, state).toArray();
-          console.log(potentialObjs.toString());
-          console.log(potentialLocs.toString());
 
           if (cmd.entity == undefined){ //does this work? should refer to the case of "it"
             for(var i = 0; i < potentialLocs.length; i++) {
@@ -149,7 +146,6 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
                 var loc : string = potentialLocs[j];
                 var lit : Literal = {polarity: true, relation: cmd.location.relation, args: [obj,loc]};
                 if(isFeasible(lit, state)) {
-                  console.log(stringifyLiteral(lit));
                   interpretation.push([lit]);
                 }
               }
@@ -186,8 +182,6 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
         return false;
       }
 
-      console.log( "RELATION : " + lit.relation);
-
       switch (lit.relation) {
         case "ontop":
           if (obj2.form != "table" && obj2.form != "floor") {
@@ -203,7 +197,6 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
           }else if ((obj1.size == obj2.size && obj1.form != "ball")||(obj1.size == "large" && obj2.size == "small")) {
             return false;
           }
-          console.log("no crash!");
           break;
         case "above": //tested kind of
           if (obj2.form == "ball") { //what about when a ball is in a box which is on a table?
@@ -459,14 +452,11 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
       var result : collections.Set<string> = new collections.Set<string>();
       var arr1 : Array<string> = set1.toArray();
       var arr2 : Array<string> = set2.toArray();
-      console.log("\n PRINTING ");
       for (var i = 0; i < arr1.length; i++) {
         for (var j = 0; j < arr2.length; j++) {
-          if (arr1[i] == "e" || arr1[i] == "f") {console.log("IT'S A BALL: " + arr2[j]);}
-          if (arr1[i] == arr2[j]) { result.add(arr1[i]); console.log("  --> " + arr1[i]); }
+          if (arr1[i] == arr2[j]) { result.add(arr1[i]); }
         }
       }
-      console.log("------------\n");
 
 
       return result;
