@@ -5,9 +5,8 @@ interface TestCase {
     interpretations : string[][]
 }
 
-
-var allTestCases : TestCase[] = [
-    {world: "small",
+/*
+{world: "small",
      utterance: "put a ball on a box",
      interpretations: []
     },
@@ -62,15 +61,20 @@ var allTestCases : TestCase[] = [
      interpretations: [["beside(e,g) | beside(e,m)"]]
     },    
 
+
+*/
+
+var allTestCases : TestCase[] = [
+    
     {world: "small",
      utterance: "put a ball in a box on the floor",
      interpretations: [["inside(e,k)", "inside(f,k)"], ["ontop(f,floor)"]]
     },
 
-    {world: "small",
+    /*{world: "small",
      utterance: "put a white ball in a box on the floor",
      interpretations: [["inside(e,k)"]]
-    },
+    },*/
 
     {world: "small",
      utterance: "put a black ball in a box on the floor",

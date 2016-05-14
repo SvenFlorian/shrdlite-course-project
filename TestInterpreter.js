@@ -2703,7 +2703,7 @@ var Interpreter;
         }
         switch (lit.relation) {
             case "ontop":
-                if (obj2.form != "table" && lit.args[1] != "floor") {
+                if (obj2.form != "table" && obj2.form != "floor") {
                     return false;
                 }
                 else if (obj2.form == "table" && obj1.form == "ball") {
@@ -2984,8 +2984,8 @@ var Interpreter;
         console.log("\n PRINTING ");
         for (var i = 0; i < arr1.length; i++) {
             for (var j = 0; j < arr2.length; j++) {
-                if (arr1[i] == "e") {
-                    console.log("WHITE BALL vs " + arr2[j]);
+                if (arr1[i] == "e" || arr1[i] == "f") {
+                    console.log("IT'S A BALL: " + arr2[j]);
                 }
                 if (arr1[i] == arr2[j]) {
                     result.add(arr1[i]);
@@ -3662,59 +3662,73 @@ ExampleWorlds["impossible"] = {
         "this is just an impossible world"
     ]
 };
+/*
+{world: "small",
+     utterance: "put a ball on a box",
+     interpretations: []
+    },
+
+    {world: "small",
+     utterance: "take an object",
+     interpretations: [["holding(e)", "holding(f)", "holding(g)", "holding(k)", "holding(l)", "holding(m)"]]
+    },
+
+    {world: "small",
+     utterance: "take a blue object",
+     interpretations: [["holding(g)", "holding(m)"]]
+    },
+
+    {world: "small",
+     utterance: "take a box",
+     interpretations: [["holding(k)", "holding(l)", "holding(m)"]]
+    },
+
+    {world: "small",
+     utterance: "put a ball in a box",
+     interpretations: [["inside(e,k)", "inside(e,l)", "inside(f,k)", "inside(f,l)", "inside(f,m)"]]
+    },
+
+    {world: "small",
+     utterance: "put a ball on a table",
+     interpretations: []
+    },
+
+    {world: "small",
+     utterance: "put a ball above a table",
+     interpretations: [["above(e,g)", "above(f,g)"]]
+    },
+
+    {world: "small",
+     utterance: "put a big ball in a small box",
+     interpretations: []
+    },
+
+    {world: "small",
+     utterance: "put a ball left of a ball",
+     interpretations: [["leftof(e,f)", "leftof(f,e)"]]
+    },
+
+    {world: "small",
+     utterance: "take a white object beside a blue object",
+     interpretations: [["holding(e)"]]
+    },
+
+    {world: "small",
+     utterance: "put a white object beside a blue object",
+     interpretations: [["beside(e,g) | beside(e,m)"]]
+    },
+
+
+*/
 var allTestCases = [
-    { world: "small",
-        utterance: "put a ball on a box",
-        interpretations: []
-    },
-    { world: "small",
-        utterance: "take an object",
-        interpretations: [["holding(e)", "holding(f)", "holding(g)", "holding(k)", "holding(l)", "holding(m)"]]
-    },
-    { world: "small",
-        utterance: "take a blue object",
-        interpretations: [["holding(g)", "holding(m)"]]
-    },
-    { world: "small",
-        utterance: "take a box",
-        interpretations: [["holding(k)", "holding(l)", "holding(m)"]]
-    },
-    { world: "small",
-        utterance: "put a ball in a box",
-        interpretations: [["inside(e,k)", "inside(e,l)", "inside(f,k)", "inside(f,l)", "inside(f,m)"]]
-    },
-    { world: "small",
-        utterance: "put a ball on a table",
-        interpretations: []
-    },
-    { world: "small",
-        utterance: "put a ball above a table",
-        interpretations: [["above(e,g)", "above(f,g)"]]
-    },
-    { world: "small",
-        utterance: "put a big ball in a small box",
-        interpretations: []
-    },
-    { world: "small",
-        utterance: "put a ball left of a ball",
-        interpretations: [["leftof(e,f)", "leftof(f,e)"]]
-    },
-    { world: "small",
-        utterance: "take a white object beside a blue object",
-        interpretations: [["holding(e)"]]
-    },
-    { world: "small",
-        utterance: "put a white object beside a blue object",
-        interpretations: [["beside(e,g) | beside(e,m)"]]
-    },
     { world: "small",
         utterance: "put a ball in a box on the floor",
         interpretations: [["inside(e,k)", "inside(f,k)"], ["ontop(f,floor)"]]
     },
-    { world: "small",
-        utterance: "put a white ball in a box on the floor",
-        interpretations: [["inside(e,k)"]]
-    },
+    /*{world: "small",
+     utterance: "put a white ball in a box on the floor",
+     interpretations: [["inside(e,k)"]]
+    },*/
     { world: "small",
         utterance: "put a black ball in a box on the floor",
         interpretations: [["inside(f,k)"], ["ontop(f,floor)"]]

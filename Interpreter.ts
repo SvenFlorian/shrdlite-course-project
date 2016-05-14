@@ -166,7 +166,7 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
       }
       switch (lit.relation) {
         case "ontop":
-          if (obj2.form != "table" && lit.args[1] != "floor") {
+          if (obj2.form != "table" && obj2.form != "floor") {
             return false;
           }else if (obj2.form == "table" && obj1.form == "ball") {
             return false;
@@ -446,7 +446,7 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
       console.log("\n PRINTING ");
       for (var i = 0; i < arr1.length; i++) {
         for (var j = 0; j < arr2.length; j++) {
-          if (arr1[i] == "e") {console.log("WHITE BALL vs " + arr2[j]);}
+          if (arr1[i] == "e" || arr1[i] == "f") {console.log("IT'S A BALL: " + arr2[j]);}
           if (arr1[i] == arr2[j]) { result.add(arr1[i]); console.log("  --> " + arr1[i]); }
         }
       }
