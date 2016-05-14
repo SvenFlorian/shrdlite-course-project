@@ -43,7 +43,7 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
             try {
                 var result : InterpretationResult = <InterpretationResult>parseresult;
                 result.interpretation = interpretCommand(result.parse, currentState);
-                stringify(result);
+                stringify(result); // we need to call this function to make the tests work for some reason.
                 //console.log("InterpretationResult: " + stringify(result));
                 interpretations.push(result);
             } catch(err) {
@@ -109,8 +109,6 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
      * @returns A list of list of Literal, representing a formula in disjunctive normal form (disjunction of conjunctions). See the dummy interpetation returned in the code for an example, which means ontop(a,floor) AND holding(b).
      */
     function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula {
-        // This returns a dummy interpretation involving two random objects in the world
-        //Step 2.
         var mObject : Array<ObjectDefinition>;
         var mString : Array<string>;
         [mObject, mString] = initMatrix(state);
@@ -233,48 +231,10 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
         return true;
     }
 
-    function getPossibleObjsTest(obj : Parser.Object) : collections.Set<string> {
-      var set : collections.Set<string> = new collections.Set<string>();
-      if(obj.form == "ball") {
-        set.add("e");
-        set.add("f");
-      }else if (obj.form == "box"){
-        set.add("k");
-        set.add("m");
-        set.add("l");
-      }else if(obj.form == "table") {
-        set.add("g");
-      }
-      if(obj.color == "blue") {
-        set.add("g");
-        set.add("m");
-      }
-      return set;
-    }
-
-
-    //matrix[Parser.Object][string]
-
-    /*function getPossibledObjs(obj: Parser.Object) : Set<string> {
-      //returns a list of all world objects
-    }*/
-
-    function stringifyObject(obj : Parser.Object) : string {
-      if (obj == null) {
-        return "";
-      }else{
-        if(obj.size == null || obj.form == null || obj.size == null){
-          return stringifyObject(obj.object);
-        } else {
-          return obj.color + obj.form + obj.size;
-        }
-      }
-    }
-
     function initMatrix(state : WorldState) : [Array<ObjectDefinition>, Array<string>] {
       var mObject : Array<ObjectDefinition> = new Array<ObjectDefinition>();
       var mString : Array<string> = new Array<string>();
-      // TODO implement as a class :P
+
       // Populate the "matrix" with data from the world
       var index : number = 0;
       for (var i = 0; i < state.stacks.length; i++) {
@@ -286,9 +246,6 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
 
       return [mObject, mString];
     }
-
-
-
     // input set
     function matchingObjects(obj : Parser.Object, mObject : Array<ObjectDefinition>, mString : Array<string>) : collections.Set<string> {
       var result : collections.Set<string> = new collections.Set<string>();
@@ -304,29 +261,20 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
       return result;
     }
 
-    /*function findObjectsInWorld(obj : Parser.Object, state : WorldState) : Set<string> {
-      var result : Set<string> = new Set<string>();
-
-    }*/
-
-
-    //var lit : Literal = {polarity: true, relation: cmd.location.relation, args: [obj,loc]}
     function traverseParseTree(obj : Parser.Object, mObject : Array<ObjectDefinition>, mString : Array<string>, state : WorldState) : collections.Set<string> {
       var result : collections.Set<string> = new collections.Set<string>();
 
       if (obj.form != null) {
         return matchingObjects(obj, mObject, mString);
-        // we have the ball. ----what ball?
+        // we have the object
       } else {
-        // the ball has a relation!
+        // the object has a relation!
         var object = obj.object;
         var relation : string = obj.location.relation;
         var relativeObject : Parser.Object = obj.location.entity.object;
 
         var originalDataset : collections.Set<string> = traverseParseTree(object, mObject, mString, state);
         var relativeDataset : collections.Set<string> = traverseParseTree(relativeObject, mObject, mString, state);
-        //originalDataset.intersect(relativeDataset);
-
         //do something about the relation and cross out infeasible objects
         return pruneList(originalDataset, relativeDataset, relation, state);
       }
@@ -458,8 +406,6 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
           if (arr1[i] == arr2[j]) { result.add(arr1[i]); }
         }
       }
-
-
       return result;
     }
 }

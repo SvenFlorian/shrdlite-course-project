@@ -8,10 +8,6 @@ interface TestCase {
 
 var allTestCases : TestCase[] = [
     {world: "small",
-     utterance: "put a red box on the floor",
-     interpretations: [["ontop(l,floor)"]]
-    },
-    {world: "small",
      utterance: "put a ball on a box",
      interpretations: []
     },

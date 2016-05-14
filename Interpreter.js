@@ -7,6 +7,7 @@ var Interpreter;
             try {
                 var result = parseresult;
                 result.interpretation = interpretCommand(result.parse, currentState);
+                stringify(result);
                 interpretations.push(result);
             }
             catch (err) {
@@ -32,7 +33,6 @@ var Interpreter;
     }
     Interpreter.stringifyLiteral = stringifyLiteral;
     function interpretCommand(cmd, state) {
-        console.log("start");
         var mObject;
         var mString;
         _a = initMatrix(state), mObject = _a[0], mString = _a[1];
@@ -51,8 +51,6 @@ var Interpreter;
         else if (cmd.command == "move" || cmd.command == "put" || cmd.command == "drop") {
             var potentialObjs = traverseParseTree(cmd.entity.object, mObject, mString, state).toArray();
             var potentialLocs = traverseParseTree(cmd.location.entity.object, mObject, mString, state).toArray();
-            console.log(potentialObjs.toString());
-            console.log(potentialLocs.toString());
             if (cmd.entity == undefined) {
                 for (var i = 0; i < potentialLocs.length; i++) {
                     var loc = potentialLocs[i];
@@ -69,7 +67,6 @@ var Interpreter;
                         var loc = potentialLocs[j];
                         var lit = { polarity: true, relation: cmd.location.relation, args: [obj, loc] };
                         if (isFeasible(lit, state)) {
-                            console.log(stringifyLiteral(lit));
                             interpretation.push([lit]);
                         }
                     }
@@ -105,10 +102,9 @@ var Interpreter;
         if (lit.args[1] == lit.args[0]) {
             return false;
         }
-        console.log("RELATION : " + lit.relation);
         switch (lit.relation) {
             case "ontop":
-                if (obj2.form != "table" && lit.args[1] != "floor") {
+                if (obj2.form != "table" && obj2.form != "floor") {
                     return false;
                 }
                 else if (obj2.form == "table" && obj1.form == "ball") {
@@ -122,7 +118,6 @@ var Interpreter;
                 else if ((obj1.size == obj2.size && obj1.form != "ball") || (obj1.size == "large" && obj2.size == "small")) {
                     return false;
                 }
-                console.log("no crash!");
                 break;
             case "above":
                 if (obj2.form == "ball") {
@@ -156,39 +151,6 @@ var Interpreter;
                 break;
         }
         return true;
-    }
-    function getPossibleObjsTest(obj) {
-        var set = new collections.Set();
-        if (obj.form == "ball") {
-            set.add("e");
-            set.add("f");
-        }
-        else if (obj.form == "box") {
-            set.add("k");
-            set.add("m");
-            set.add("l");
-        }
-        else if (obj.form == "table") {
-            set.add("g");
-        }
-        if (obj.color == "blue") {
-            set.add("g");
-            set.add("m");
-        }
-        return set;
-    }
-    function stringifyObject(obj) {
-        if (obj == null) {
-            return "";
-        }
-        else {
-            if (obj.size == null || obj.form == null || obj.size == null) {
-                return stringifyObject(obj.object);
-            }
-            else {
-                return obj.color + obj.form + obj.size;
-            }
-        }
     }
     function initMatrix(state) {
         var mObject = new Array();
@@ -365,19 +327,13 @@ var Interpreter;
         var result = new collections.Set();
         var arr1 = set1.toArray();
         var arr2 = set2.toArray();
-        console.log("\n PRINTING ");
         for (var i = 0; i < arr1.length; i++) {
             for (var j = 0; j < arr2.length; j++) {
-                if (arr1[i] == "e") {
-                    console.log("WHITE BALL vs " + arr2[j]);
-                }
                 if (arr1[i] == arr2[j]) {
                     result.add(arr1[i]);
-                    console.log("  --> " + arr1[i]);
                 }
             }
         }
-        console.log("------------\n");
         return result;
     }
 })(Interpreter || (Interpreter = {}));
