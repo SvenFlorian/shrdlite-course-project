@@ -43,6 +43,7 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
             try {
                 var result : InterpretationResult = <InterpretationResult>parseresult;
                 result.interpretation = interpretCommand(result.parse, currentState);
+                console.log("yo yo" + stringify(result));
                 interpretations.push(result);
             } catch(err) {
                 errors.push(err);
