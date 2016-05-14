@@ -44,7 +44,6 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
                 var result : InterpretationResult = <InterpretationResult>parseresult;
                 result.interpretation = interpretCommand(result.parse, currentState);
                 stringify(result); // we need to call this function to make the tests work for some reason.
-                //console.log("InterpretationResult: " + stringify(result));
                 interpretations.push(result);
             } catch(err) {
                 errors.push(err);
@@ -98,12 +97,6 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
     //////////////////////////////////////////////////////////////////////
     // private functions
     /**
-     * The core interpretation function. The code here is just a
-     * template; you should rewrite this function entirely. In this
-     * template, the code produces a dummy interpretation which is not
-     * connected to `cmd`, but your version of the function should
-     * analyse cmd in order to figure out what interpretation to
-     * return.
      * @param cmd The actual command. Note that it is *not* a string, but rather an object of type `Command` (as it has been parsed by the parser).
      * @param state The current state of the world. Useful to look up objects in the world.
      * @returns A list of list of Literal, representing a formula in disjunctive normal form (disjunction of conjunctions). See the dummy interpetation returned in the code for an example, which means ontop(a,floor) AND holding(b).
@@ -111,13 +104,13 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
     function interpretCommand(cmd : Parser.Command, state : WorldState) : DNFFormula {
         var mObject : Array<ObjectDefinition>;
         var mString : Array<string>;
-        [mObject, mString] = initMatrix(state);
+        [mObject, mString] = initObjectMapping(state); //initialize a mapping between the objects in the world and their names.
 
         var interpretation : DNFFormula;
         interpretation = [
             ];
         if(cmd.command == "pick up" || cmd.command == "grasp" || cmd.command == "take") {
-          var potentialObjs : Array<string> = traverseParseTree(cmd.entity.object, mObject, mString, state).toArray();
+          var potentialObjs : Array<string> = getMatchingObjects(cmd.entity.object, mObject, mString, state).toArray();
           for(var i = 0; i < potentialObjs.length; i++) {
             var obj : string = potentialObjs[i];
             var lit : Literal = {polarity: true, relation: "holding", args: [obj]};
@@ -127,26 +120,15 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
           }
 
         }else if (cmd.command == "move" || cmd.command == "put" || cmd.command == "drop") {
-          var potentialObjs : Array<string> = traverseParseTree(cmd.entity.object, mObject, mString, state).toArray();
-          var potentialLocs : Array<string> = traverseParseTree(cmd.location.entity.object, mObject, mString, state).toArray();
-
-          if (cmd.entity == undefined){ //does this work? should refer to the case of "it"
-            for(var i = 0; i < potentialLocs.length; i++) {
-              var loc : string = potentialLocs[i];
-              var lit : Literal = {polarity: true, relation: cmd.location.relation, args: [state.holding,loc]}
+          var potentialObjs : Array<string> = getMatchingObjects(cmd.entity.object, mObject, mString, state).toArray();
+          var potentialLocs : Array<string> = getMatchingObjects(cmd.location.entity.object, mObject, mString, state).toArray();
+          for(var i = 0; i < potentialObjs.length; i++) {
+            var obj : string = potentialObjs[i];
+            for(var j = 0; j < potentialLocs.length; j++) {
+              var loc : string = potentialLocs[j];
+              var lit : Literal = {polarity: true, relation: cmd.location.relation, args: [obj,loc]};
               if(isFeasible(lit, state)) {
                 interpretation.push([lit]);
-              }
-            }
-          }else{
-            for(var i = 0; i < potentialObjs.length; i++) {
-              var obj : string = potentialObjs[i];
-              for(var j = 0; j < potentialLocs.length; j++) {
-                var loc : string = potentialLocs[j];
-                var lit : Literal = {polarity: true, relation: cmd.location.relation, args: [obj,loc]};
-                if(isFeasible(lit, state)) {
-                  interpretation.push([lit]);
-                }
               }
             }
           }
@@ -154,17 +136,16 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
         if (interpretation.length == 0) {
           return null;
         }
-
         return interpretation;
     }
+
     function isFeasible(lit : Literal, state : WorldState) : boolean {
       if (lit.relation == "holding" && lit.args[0] == "floor") {
         return false;
       } //otherwise there are 2 arguments
-
-
-      var obj1 : Parser.Object; //special case for floor, since it doesnt exist in the worldstate
+      var obj1 : Parser.Object;
       var obj2 : Parser.Object;
+      //special case for floor, since it doesnt exist in the worldstate
       if(lit.args[0] == "floor") {
         obj1 = new Object();
         obj1.form = "floor";
@@ -188,17 +169,16 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
           }else if (obj2.form == "table" && obj1.form == "ball") {
             return false;
           }
-
           break;
-        case "inside": //tested
+        case "inside":
           if (obj2.form != "box") {
             return false;
           }else if ((obj1.size == obj2.size && obj1.form != "ball")||(obj1.size == "large" && obj2.size == "small")) {
             return false;
           }
           break;
-        case "above": //tested kind of
-          if (obj2.form == "ball") { //what about when a ball is in a box which is on a table?
+        case "above":
+          if (obj2.form == "ball") {
              return false;
           }
           if (obj1.size == "large" && obj2.size == "small") {
@@ -219,23 +199,19 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
             return false;
           }
           break;
-        case "leftof": //nothing
-          break;
-        case "rightof": //nothing
-          break;
-        case "beside": //nothing
-          break;
         default :
           break;
         }
         return true;
     }
-
-    function initMatrix(state : WorldState) : [Array<ObjectDefinition>, Array<string>] {
+    /**
+    @returns a mapping between the objects in the world and their names
+    */
+    function initObjectMapping(state : WorldState) : [Array<ObjectDefinition>, Array<string>] {
       var mObject : Array<ObjectDefinition> = new Array<ObjectDefinition>();
       var mString : Array<string> = new Array<string>();
 
-      // Populate the "matrix" with data from the world
+      // Populate the "list" with data from the world
       var index : number = 0;
       for (var i = 0; i < state.stacks.length; i++) {
         for (var j = 0; j < state.stacks[i].length; j++) {
@@ -246,43 +222,41 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
 
       return [mObject, mString];
     }
-    // input set
-    function matchingObjects(obj : Parser.Object, mObject : Array<ObjectDefinition>, mString : Array<string>) : collections.Set<string> {
+
+    /**
+    @returns The names of all objects that the given Parser.object could be refering to
+    */
+    function getMatchingObjects(obj : Parser.Object, mObject : Array<ObjectDefinition>, mString : Array<string>, state : WorldState) : collections.Set<string> {
       var result : collections.Set<string> = new collections.Set<string>();
-      for (var i = 0; i < mObject.length ; i++) {
-        if (obj.form != null && obj.form != "anyform" && obj.form != mObject[i].form) { continue; }
-        if (obj.size != null && obj.form != "anysize" && obj.size != mObject[i].size) { continue; }
-        if (obj.color != null && obj.form != "anycolor" && obj.color != mObject[i].color) { continue; }
-        result.add(mString[i]);
-      }
-
-      if (obj.form == "floor") { result.add("floor"); }
-
-      return result;
-    }
-
-    function traverseParseTree(obj : Parser.Object, mObject : Array<ObjectDefinition>, mString : Array<string>, state : WorldState) : collections.Set<string> {
-      var result : collections.Set<string> = new collections.Set<string>();
-
       if (obj.form != null) {
-        return matchingObjects(obj, mObject, mString);
-        // we have the object
+        // we have the actual object
+        for (var i = 0; i < mObject.length ; i++) {
+          if (obj.form != null && obj.form != "anyform" && obj.form != mObject[i].form) { continue; }
+          if (obj.size != null && obj.size != "anysize" && obj.size != mObject[i].size) { continue; }
+          if (obj.color != null && obj.color != "anycolor" && obj.color != mObject[i].color) { continue; }
+          result.add(mString[i]);
+        }
+        if (obj.form == "floor") { result.add("floor"); }
+        return result;
       } else {
         // the object has a relation!
         var object = obj.object;
         var relation : string = obj.location.relation;
         var relativeObject : Parser.Object = obj.location.entity.object;
 
-        var originalDataset : collections.Set<string> = traverseParseTree(object, mObject, mString, state);
-        var relativeDataset : collections.Set<string> = traverseParseTree(relativeObject, mObject, mString, state);
+        var originalDataset : collections.Set<string> = getMatchingObjects(object, mObject, mString, state);
+        var relativeDataset : collections.Set<string> = getMatchingObjects(relativeObject, mObject, mString, state);
         //do something about the relation and cross out infeasible objects
         return pruneList(originalDataset, relativeDataset, relation, state);
       }
     }
-
+    /**
+    @returns the intersection of given set and the set of objects that are feasible due to the given relation
+    */
     function pruneList(original : collections.Set<string>, relativeData : collections.Set<string>, relation : string, state : WorldState) : collections.Set<string> {
       var matchingObjects : collections.Set<string> = new collections.Set<string>();
       var relative : Array<string> = relativeData.toArray();
+      //loop through every object in the stack and find the objects that fulfill the relation
       switch (relation) {
         case "ontop":
           for (var k = 0; k < relative.length; k++) {
@@ -316,7 +290,6 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
             }
           }
         break;
-
         case "above":
           for (var k = 0; k < relative.length; k++) {
             if (relative[k] == "floor") {
@@ -393,19 +366,7 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
         break;
         default: break;
       }
-
-      return intersectSet(original, matchingObjects);
-    }
-
-    function intersectSet(set1 : collections.Set<string>, set2 : collections.Set<string>) : collections.Set<string> {
-      var result : collections.Set<string> = new collections.Set<string>();
-      var arr1 : Array<string> = set1.toArray();
-      var arr2 : Array<string> = set2.toArray();
-      for (var i = 0; i < arr1.length; i++) {
-        for (var j = 0; j < arr2.length; j++) {
-          if (arr1[i] == arr2[j]) { result.add(arr1[i]); }
-        }
-      }
-      return result;
+        original.intersection(matchingObjects);
+        return original;
     }
 }

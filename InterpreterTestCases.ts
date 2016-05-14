@@ -75,7 +75,8 @@ var allTestCases : TestCase[] = [
     {world: "small",
      utterance: "put a black ball in a box on the floor",
      interpretations: [["inside(f,k)"], ["ontop(f,floor)"]]
-    }
+    },
+
 ];
 
 

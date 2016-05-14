@@ -35,11 +35,11 @@ var Interpreter;
     function interpretCommand(cmd, state) {
         var mObject;
         var mString;
-        _a = initMatrix(state), mObject = _a[0], mString = _a[1];
+        _a = initObjectMapping(state), mObject = _a[0], mString = _a[1];
         var interpretation;
         interpretation = [];
         if (cmd.command == "pick up" || cmd.command == "grasp" || cmd.command == "take") {
-            var potentialObjs = traverseParseTree(cmd.entity.object, mObject, mString, state).toArray();
+            var potentialObjs = getMatchingObjects(cmd.entity.object, mObject, mString, state).toArray();
             for (var i = 0; i < potentialObjs.length; i++) {
                 var obj = potentialObjs[i];
                 var lit = { polarity: true, relation: "holding", args: [obj] };
@@ -49,26 +49,15 @@ var Interpreter;
             }
         }
         else if (cmd.command == "move" || cmd.command == "put" || cmd.command == "drop") {
-            var potentialObjs = traverseParseTree(cmd.entity.object, mObject, mString, state).toArray();
-            var potentialLocs = traverseParseTree(cmd.location.entity.object, mObject, mString, state).toArray();
-            if (cmd.entity == undefined) {
-                for (var i = 0; i < potentialLocs.length; i++) {
-                    var loc = potentialLocs[i];
-                    var lit = { polarity: true, relation: cmd.location.relation, args: [state.holding, loc] };
+            var potentialObjs = getMatchingObjects(cmd.entity.object, mObject, mString, state).toArray();
+            var potentialLocs = getMatchingObjects(cmd.location.entity.object, mObject, mString, state).toArray();
+            for (var i = 0; i < potentialObjs.length; i++) {
+                var obj = potentialObjs[i];
+                for (var j = 0; j < potentialLocs.length; j++) {
+                    var loc = potentialLocs[j];
+                    var lit = { polarity: true, relation: cmd.location.relation, args: [obj, loc] };
                     if (isFeasible(lit, state)) {
                         interpretation.push([lit]);
-                    }
-                }
-            }
-            else {
-                for (var i = 0; i < potentialObjs.length; i++) {
-                    var obj = potentialObjs[i];
-                    for (var j = 0; j < potentialLocs.length; j++) {
-                        var loc = potentialLocs[j];
-                        var lit = { polarity: true, relation: cmd.location.relation, args: [obj, loc] };
-                        if (isFeasible(lit, state)) {
-                            interpretation.push([lit]);
-                        }
                     }
                 }
             }
@@ -141,18 +130,12 @@ var Interpreter;
                     return false;
                 }
                 break;
-            case "leftof":
-                break;
-            case "rightof":
-                break;
-            case "beside":
-                break;
             default:
                 break;
         }
         return true;
     }
-    function initMatrix(state) {
+    function initObjectMapping(state) {
         var mObject = new Array();
         var mString = new Array();
         var index = 0;
@@ -164,36 +147,32 @@ var Interpreter;
         }
         return [mObject, mString];
     }
-    function matchingObjects(obj, mObject, mString) {
-        var result = new collections.Set();
-        for (var i = 0; i < mObject.length; i++) {
-            if (obj.form != null && obj.form != "anyform" && obj.form != mObject[i].form) {
-                continue;
-            }
-            if (obj.size != null && obj.form != "anysize" && obj.size != mObject[i].size) {
-                continue;
-            }
-            if (obj.color != null && obj.form != "anycolor" && obj.color != mObject[i].color) {
-                continue;
-            }
-            result.add(mString[i]);
-        }
-        if (obj.form == "floor") {
-            result.add("floor");
-        }
-        return result;
-    }
-    function traverseParseTree(obj, mObject, mString, state) {
+    function getMatchingObjects(obj, mObject, mString, state) {
         var result = new collections.Set();
         if (obj.form != null) {
-            return matchingObjects(obj, mObject, mString);
+            for (var i = 0; i < mObject.length; i++) {
+                if (obj.form != null && obj.form != "anyform" && obj.form != mObject[i].form) {
+                    continue;
+                }
+                if (obj.size != null && obj.size != "anysize" && obj.size != mObject[i].size) {
+                    continue;
+                }
+                if (obj.color != null && obj.color != "anycolor" && obj.color != mObject[i].color) {
+                    continue;
+                }
+                result.add(mString[i]);
+            }
+            if (obj.form == "floor") {
+                result.add("floor");
+            }
+            return result;
         }
         else {
             var object = obj.object;
             var relation = obj.location.relation;
             var relativeObject = obj.location.entity.object;
-            var originalDataset = traverseParseTree(object, mObject, mString, state);
-            var relativeDataset = traverseParseTree(relativeObject, mObject, mString, state);
+            var originalDataset = getMatchingObjects(object, mObject, mString, state);
+            var relativeDataset = getMatchingObjects(relativeObject, mObject, mString, state);
             return pruneList(originalDataset, relativeDataset, relation, state);
         }
     }
@@ -321,19 +300,7 @@ var Interpreter;
                 break;
             default: break;
         }
-        return intersectSet(original, matchingObjects);
-    }
-    function intersectSet(set1, set2) {
-        var result = new collections.Set();
-        var arr1 = set1.toArray();
-        var arr2 = set2.toArray();
-        for (var i = 0; i < arr1.length; i++) {
-            for (var j = 0; j < arr2.length; j++) {
-                if (arr1[i] == arr2[j]) {
-                    result.add(arr1[i]);
-                }
-            }
-        }
-        return result;
+        original.intersection(matchingObjects);
+        return original;
     }
 })(Interpreter || (Interpreter = {}));

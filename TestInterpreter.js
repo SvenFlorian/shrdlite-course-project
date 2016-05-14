@@ -2635,26 +2635,18 @@ var Interpreter;
     //////////////////////////////////////////////////////////////////////
     // private functions
     /**
-     * The core interpretation function. The code here is just a
-     * template; you should rewrite this function entirely. In this
-     * template, the code produces a dummy interpretation which is not
-     * connected to `cmd`, but your version of the function should
-     * analyse cmd in order to figure out what interpretation to
-     * return.
      * @param cmd The actual command. Note that it is *not* a string, but rather an object of type `Command` (as it has been parsed by the parser).
      * @param state The current state of the world. Useful to look up objects in the world.
      * @returns A list of list of Literal, representing a formula in disjunctive normal form (disjunction of conjunctions). See the dummy interpetation returned in the code for an example, which means ontop(a,floor) AND holding(b).
      */
     function interpretCommand(cmd, state) {
-        // This returns a dummy interpretation involving two random objects in the world
-        //Step 2.
         var mObject;
         var mString;
-        _a = initMatrix(state), mObject = _a[0], mString = _a[1];
+        _a = initObjectMapping(state), mObject = _a[0], mString = _a[1]; //initialize a mapping between the objects in the world and their names.
         var interpretation;
         interpretation = [];
         if (cmd.command == "pick up" || cmd.command == "grasp" || cmd.command == "take") {
-            var potentialObjs = traverseParseTree(cmd.entity.object, mObject, mString, state).toArray();
+            var potentialObjs = getMatchingObjects(cmd.entity.object, mObject, mString, state).toArray();
             for (var i = 0; i < potentialObjs.length; i++) {
                 var obj = potentialObjs[i];
                 var lit = { polarity: true, relation: "holding", args: [obj] };
@@ -2664,26 +2656,15 @@ var Interpreter;
             }
         }
         else if (cmd.command == "move" || cmd.command == "put" || cmd.command == "drop") {
-            var potentialObjs = traverseParseTree(cmd.entity.object, mObject, mString, state).toArray();
-            var potentialLocs = traverseParseTree(cmd.location.entity.object, mObject, mString, state).toArray();
-            if (cmd.entity == undefined) {
-                for (var i = 0; i < potentialLocs.length; i++) {
-                    var loc = potentialLocs[i];
-                    var lit = { polarity: true, relation: cmd.location.relation, args: [state.holding, loc] };
+            var potentialObjs = getMatchingObjects(cmd.entity.object, mObject, mString, state).toArray();
+            var potentialLocs = getMatchingObjects(cmd.location.entity.object, mObject, mString, state).toArray();
+            for (var i = 0; i < potentialObjs.length; i++) {
+                var obj = potentialObjs[i];
+                for (var j = 0; j < potentialLocs.length; j++) {
+                    var loc = potentialLocs[j];
+                    var lit = { polarity: true, relation: cmd.location.relation, args: [obj, loc] };
                     if (isFeasible(lit, state)) {
                         interpretation.push([lit]);
-                    }
-                }
-            }
-            else {
-                for (var i = 0; i < potentialObjs.length; i++) {
-                    var obj = potentialObjs[i];
-                    for (var j = 0; j < potentialLocs.length; j++) {
-                        var loc = potentialLocs[j];
-                        var lit = { polarity: true, relation: cmd.location.relation, args: [obj, loc] };
-                        if (isFeasible(lit, state)) {
-                            interpretation.push([lit]);
-                        }
                     }
                 }
             }
@@ -2698,8 +2679,9 @@ var Interpreter;
         if (lit.relation == "holding" && lit.args[0] == "floor") {
             return false;
         } //otherwise there are 2 arguments
-        var obj1; //special case for floor, since it doesnt exist in the worldstate
+        var obj1;
         var obj2;
+        //special case for floor, since it doesnt exist in the worldstate
         if (lit.args[0] == "floor") {
             obj1 = new Object();
             obj1.form = "floor";
@@ -2756,59 +2738,18 @@ var Interpreter;
                     return false;
                 }
                 break;
-            case "leftof":
-                break;
-            case "rightof":
-                break;
-            case "beside":
-                break;
             default:
                 break;
         }
         return true;
     }
-    function getPossibleObjsTest(obj) {
-        var set = new collections.Set();
-        if (obj.form == "ball") {
-            set.add("e");
-            set.add("f");
-        }
-        else if (obj.form == "box") {
-            set.add("k");
-            set.add("m");
-            set.add("l");
-        }
-        else if (obj.form == "table") {
-            set.add("g");
-        }
-        if (obj.color == "blue") {
-            set.add("g");
-            set.add("m");
-        }
-        return set;
-    }
-    //matrix[Parser.Object][string]
-    /*function getPossibledObjs(obj: Parser.Object) : Set<string> {
-      //returns a list of all world objects
-    }*/
-    function stringifyObject(obj) {
-        if (obj == null) {
-            return "";
-        }
-        else {
-            if (obj.size == null || obj.form == null || obj.size == null) {
-                return stringifyObject(obj.object);
-            }
-            else {
-                return obj.color + obj.form + obj.size;
-            }
-        }
-    }
-    function initMatrix(state) {
+    /**
+    @returns a mapping between the objects in the world and their names
+    */
+    function initObjectMapping(state) {
         var mObject = new Array();
         var mString = new Array();
-        // TODO implement as a class :P
-        // Populate the "matrix" with data from the world
+        // Populate the "list" with data from the world
         var index = 0;
         for (var i = 0; i < state.stacks.length; i++) {
             for (var j = 0; j < state.stacks[i].length; j++) {
@@ -2818,48 +2759,44 @@ var Interpreter;
         }
         return [mObject, mString];
     }
-    // input set
-    function matchingObjects(obj, mObject, mString) {
-        var result = new collections.Set();
-        for (var i = 0; i < mObject.length; i++) {
-            if (obj.form != null && obj.form != "anyform" && obj.form != mObject[i].form) {
-                continue;
-            }
-            if (obj.size != null && obj.form != "anysize" && obj.size != mObject[i].size) {
-                continue;
-            }
-            if (obj.color != null && obj.form != "anycolor" && obj.color != mObject[i].color) {
-                continue;
-            }
-            result.add(mString[i]);
-        }
-        if (obj.form == "floor") {
-            result.add("floor");
-        }
-        return result;
-    }
-    /*function findObjectsInWorld(obj : Parser.Object, state : WorldState) : Set<string> {
-      var result : Set<string> = new Set<string>();
-
-    }*/
-    //var lit : Literal = {polarity: true, relation: cmd.location.relation, args: [obj,loc]}
-    function traverseParseTree(obj, mObject, mString, state) {
+    /**
+    @returns The names of all objects that the given Parser.object could be refering to
+    */
+    function getMatchingObjects(obj, mObject, mString, state) {
         var result = new collections.Set();
         if (obj.form != null) {
-            return matchingObjects(obj, mObject, mString);
+            // we have the actual object
+            for (var i = 0; i < mObject.length; i++) {
+                if (obj.form != null && obj.form != "anyform" && obj.form != mObject[i].form) {
+                    continue;
+                }
+                if (obj.size != null && obj.size != "anysize" && obj.size != mObject[i].size) {
+                    continue;
+                }
+                if (obj.color != null && obj.color != "anycolor" && obj.color != mObject[i].color) {
+                    continue;
+                }
+                result.add(mString[i]);
+            }
+            if (obj.form == "floor") {
+                result.add("floor");
+            }
+            return result;
         }
         else {
-            // the ball has a relation!
+            // the object has a relation!
             var object = obj.object;
             var relation = obj.location.relation;
             var relativeObject = obj.location.entity.object;
-            var originalDataset = traverseParseTree(object, mObject, mString, state);
-            var relativeDataset = traverseParseTree(relativeObject, mObject, mString, state);
-            //originalDataset.intersect(relativeDataset);
+            var originalDataset = getMatchingObjects(object, mObject, mString, state);
+            var relativeDataset = getMatchingObjects(relativeObject, mObject, mString, state);
             //do something about the relation and cross out infeasible objects
             return pruneList(originalDataset, relativeDataset, relation, state);
         }
     }
+    /**
+    @returns the intersection of given set and the set of objects that are feasible due to the given relation
+    */
     function pruneList(original, relativeData, relation, state) {
         var matchingObjects = new collections.Set();
         var relative = relativeData.toArray();
@@ -2984,20 +2921,8 @@ var Interpreter;
                 break;
             default: break;
         }
-        return intersectSet(original, matchingObjects);
-    }
-    function intersectSet(set1, set2) {
-        var result = new collections.Set();
-        var arr1 = set1.toArray();
-        var arr2 = set2.toArray();
-        for (var i = 0; i < arr1.length; i++) {
-            for (var j = 0; j < arr2.length; j++) {
-                if (arr1[i] == arr2[j]) {
-                    result.add(arr1[i]);
-                }
-            }
-        }
-        return result;
+        original.intersection(matchingObjects);
+        return original;
     }
 })(Interpreter || (Interpreter = {}));
 ///<reference path="World.ts"/>
@@ -3555,7 +3480,7 @@ var allTestCases = [
     { world: "small",
         utterance: "put a black ball in a box on the floor",
         interpretations: [["inside(f,k)"], ["ontop(f,floor)"]]
-    }
+    },
 ];
 // /* Simple test cases for the ALL quantifier, uncomment if you want */
 // allTestCases.push(
