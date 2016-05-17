@@ -2700,7 +2700,7 @@ var Interpreter;
         }
         switch (lit.relation) {
             case "ontop":
-                if (obj2.form == "box") {
+                if (obj2.form == "box" || obj1.form == "floor") {
                     return false;
                 }
                 if (obj1 == "ball" && obj2.form != "floor") {
@@ -2720,7 +2720,7 @@ var Interpreter;
                 }
                 break;
             case "inside":
-                if (obj2.form != "box") {
+                if (obj2.form != "box" || obj1.form == "floor") {
                     return false;
                 }
                 else if ((obj1.size == obj2.size && (obj1.form != "ball" || obj1.form == "pyramid" || obj1.form == "plank")) || (obj1.size == "large" && obj2.size == "small")) {
@@ -2728,12 +2728,17 @@ var Interpreter;
                 }
                 break;
             case "leftof":
-                if (obj2.form == "floor") {
+                if (obj2.form == "floor" || obj1.form == "floor") {
                     return false;
                 }
                 break;
             case "rightof":
-                if (obj2.form == "floor") {
+                if (obj2.form == "floor" || obj1.form == "floor") {
+                    return false;
+                }
+                break;
+            case "beside":
+                if (obj2.form == "floor" || obj1.form == "floor") {
                     return false;
                 }
                 break;
@@ -2782,7 +2787,6 @@ var Interpreter;
             mObject[index] = state.objects[state.holding];
             mString[index++] = state.holding;
         }
-        console.log("\n\nOMG OMG State.holding: " + state.holding);
         return [mObject, mString];
     }
     /**

@@ -37,7 +37,7 @@ var Interpreter;
         _a = initObjectMapping(state), mObject = _a[0], mString = _a[1];
         var interpretation;
         interpretation = [];
-        if (cmd.command == "pick up" || cmd.command == "grasp" || cmd.command == "take") {
+        if (cmd.command == "take") {
             var potentialObjs = getMatchingObjects(cmd.entity.object, mObject, mString, state).toArray();
             for (var i = 0; i < potentialObjs.length; i++) {
                 var obj = potentialObjs[i];
@@ -47,8 +47,9 @@ var Interpreter;
                 }
             }
         }
-        else if (cmd.command == "move" || cmd.command == "put" || cmd.command == "drop") {
-            var potentialObjs = getMatchingObjects(cmd.entity.object, mObject, mString, state).toArray();
+        else if (cmd.command == "move" || cmd.command == "put") {
+            var potentialObjs = (cmd.entity == undefined) ? [state.holding] :
+                getMatchingObjects(cmd.entity.object, mObject, mString, state).toArray();
             var potentialLocs = getMatchingObjects(cmd.location.entity.object, mObject, mString, state).toArray();
             for (var i = 0; i < potentialObjs.length; i++) {
                 var obj = potentialObjs[i];
@@ -92,7 +93,7 @@ var Interpreter;
         }
         switch (lit.relation) {
             case "ontop":
-                if (obj2.form == "box") {
+                if (obj2.form == "box" || obj1.form == "floor") {
                     return false;
                 }
                 if (obj1 == "ball" && obj2.form != "floor") {
@@ -112,20 +113,26 @@ var Interpreter;
                 }
                 break;
             case "inside":
-                if (obj2.form != "box") {
+                if (obj2.form != "box" || obj1.form == "floor") {
                     return false;
                 }
-                else if ((obj1.size == obj2.size && (obj1.form != "ball" || obj1.form == "pyramid" || obj1.form == "plank")) || (obj1.size == "large" && obj2.size == "small")) {
+                else if ((obj1.size == obj2.size && (obj1.form != "ball" && obj1.form != "brick")) ||
+                    (obj1.size == "large" && obj2.size == "small")) {
                     return false;
                 }
                 break;
             case "leftof":
-                if (obj2.form == "floor") {
+                if (obj2.form == "floor" || obj1.form == "floor") {
                     return false;
                 }
                 break;
             case "rightof":
-                if (obj2.form == "floor") {
+                if (obj2.form == "floor" || obj1.form == "floor") {
+                    return false;
+                }
+                break;
+            case "beside":
+                if (obj2.form == "floor" || obj1.form == "floor") {
                     return false;
                 }
                 break;
@@ -136,7 +143,7 @@ var Interpreter;
                 if (obj1.size == "large" && obj2.size == "small") {
                     return false;
                 }
-                if (lit.args[0] == "floor") {
+                if (obj1.form == "floor") {
                     return false;
                 }
                 break;
@@ -147,7 +154,7 @@ var Interpreter;
                 if (obj1.size == "small" && obj2.size == "large") {
                     return false;
                 }
-                if (lit.args[1] == "floor") {
+                if (obj2.form == "floor") {
                     return false;
                 }
                 break;
@@ -165,6 +172,10 @@ var Interpreter;
                 mObject[index] = state.objects[state.stacks[i][j]];
                 mString[index++] = state.stacks[i][j];
             }
+        }
+        if (state.holding != null) {
+            mObject[index] = state.objects[state.holding];
+            mString[index++] = state.holding;
         }
         return [mObject, mString];
     }
