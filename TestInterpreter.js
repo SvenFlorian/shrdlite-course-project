@@ -2643,7 +2643,7 @@ var Interpreter;
         _a = initObjectMapping(state), mObject = _a[0], mString = _a[1]; //initialize a mapping between the objects in the world and their names.
         var interpretation;
         interpretation = [];
-        if (cmd.command == "pick up" || cmd.command == "grasp" || cmd.command == "take") {
+        if (cmd.command == "take") {
             var potentialObjs = getMatchingObjects(cmd.entity.object, mObject, mString, state).toArray();
             for (var i = 0; i < potentialObjs.length; i++) {
                 var obj = potentialObjs[i];
@@ -2653,8 +2653,9 @@ var Interpreter;
                 }
             }
         }
-        else if (cmd.command == "move" || cmd.command == "put" || cmd.command == "drop") {
-            var potentialObjs = getMatchingObjects(cmd.entity.object, mObject, mString, state).toArray();
+        else if (cmd.command == "move" || cmd.command == "put") {
+            var potentialObjs = (cmd.entity == undefined) ? [state.holding] :
+                getMatchingObjects(cmd.entity.object, mObject, mString, state).toArray();
             var potentialLocs = getMatchingObjects(cmd.location.entity.object, mObject, mString, state).toArray();
             for (var i = 0; i < potentialObjs.length; i++) {
                 var obj = potentialObjs[i];
@@ -2755,6 +2756,11 @@ var Interpreter;
                 mString[index++] = state.stacks[i][j];
             }
         }
+        if (state.holding != null) {
+            mObject[index] = state.objects[state.holding];
+            mString[index++] = state.holding;
+        }
+        console.log("\n\nOMG OMG State.holding: " + state.holding);
         return [mObject, mString];
     }
     /**
@@ -3154,8 +3160,7 @@ var TextWorld = (function () {
         this.currentState = currentState;
         if (!this.currentState.arm)
             this.currentState.arm = 0;
-        if (this.currentState.holding)
-            this.currentState.holding = null;
+        //if (this.currentState.holding) this.currentState.holding = null;
     }
     TextWorld.prototype.readUserInput = function (prompt, callback) {
         throw "Not implemented!";
@@ -3480,6 +3485,10 @@ var allTestCases = [
         utterance: "put a black ball in a box on the floor",
         interpretations: [["inside(f,k)"], ["ontop(f,floor)"]]
     },
+    { world: "small",
+        utterance: "put a black ball in a box on the floor",
+        interpretations: [["inside(f,k)"], ["ontop(f,floor)"]]
+    }
 ];
 // /* Simple test cases for the ALL quantifier, uncomment if you want */
 // allTestCases.push(
