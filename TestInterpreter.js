@@ -2643,7 +2643,7 @@ var Interpreter;
         _a = initObjectMapping(state), mObject = _a[0], mString = _a[1]; //initialize a mapping between the objects in the world and their names.
         var interpretation;
         interpretation = [];
-        if (cmd.command == "pick up" || cmd.command == "grasp" || cmd.command == "take") {
+        if (cmd.command == "take") {
             var potentialObjs = getMatchingObjects(cmd.entity.object, mObject, mString, state).toArray();
             for (var i = 0; i < potentialObjs.length; i++) {
                 var obj = potentialObjs[i];
@@ -2653,8 +2653,9 @@ var Interpreter;
                 }
             }
         }
-        else if (cmd.command == "move" || cmd.command == "put" || cmd.command == "drop") {
-            var potentialObjs = getMatchingObjects(cmd.entity.object, mObject, mString, state).toArray();
+        else if (cmd.command == "move" || cmd.command == "put") {
+            var potentialObjs = (cmd.entity == undefined) ? [state.holding] :
+                getMatchingObjects(cmd.entity.object, mObject, mString, state).toArray();
             var potentialLocs = getMatchingObjects(cmd.location.entity.object, mObject, mString, state).toArray();
             for (var i = 0; i < potentialObjs.length; i++) {
                 var obj = potentialObjs[i];
@@ -2699,10 +2700,22 @@ var Interpreter;
         }
         switch (lit.relation) {
             case "ontop":
-                if (obj2.form != "table" && obj2.form != "floor") {
+                if (obj2.form == "box") {
                     return false;
                 }
-                else if (obj2.form == "table" && obj1.form == "ball") {
+                if (obj1 == "ball" && obj2.form != "floor") {
+                    return false;
+                }
+                if ((obj1.form == "box" && obj1.size == "small") && (obj2.size == "small" && (obj2.form == "brick" || obj2.form == "pyramid"))) {
+                    return false;
+                }
+                if ((obj1.size == "large" && obj1.form == "box") && (obj2.form == "pyramid")) {
+                    return false;
+                }
+                if (obj2.size == "small" && obj1.size == "large") {
+                    return false;
+                }
+                if (obj2.form == "table" && obj1.form == "ball") {
                     return false;
                 }
                 break;
@@ -2710,7 +2723,17 @@ var Interpreter;
                 if (obj2.form != "box") {
                     return false;
                 }
-                else if ((obj1.size == obj2.size && obj1.form != "ball") || (obj1.size == "large" && obj2.size == "small")) {
+                else if ((obj1.size == obj2.size && (obj1.form != "ball" || obj1.form == "pyramid" || obj1.form == "plank")) || (obj1.size == "large" && obj2.size == "small")) {
+                    return false;
+                }
+                break;
+            case "leftof":
+                if (obj2.form == "floor") {
+                    return false;
+                }
+                break;
+            case "rightof":
+                if (obj2.form == "floor") {
                     return false;
                 }
                 break;
@@ -2755,6 +2778,11 @@ var Interpreter;
                 mString[index++] = state.stacks[i][j];
             }
         }
+        if (state.holding != null) {
+            mObject[index] = state.objects[state.holding];
+            mString[index++] = state.holding;
+        }
+        console.log("\n\nOMG OMG State.holding: " + state.holding);
         return [mObject, mString];
     }
     /**
@@ -3154,8 +3182,7 @@ var TextWorld = (function () {
         this.currentState = currentState;
         if (!this.currentState.arm)
             this.currentState.arm = 0;
-        if (this.currentState.holding)
-            this.currentState.holding = null;
+        //if (this.currentState.holding) this.currentState.holding = null;
     }
     TextWorld.prototype.readUserInput = function (prompt, callback) {
         throw "Not implemented!";
@@ -3480,6 +3507,10 @@ var allTestCases = [
         utterance: "put a black ball in a box on the floor",
         interpretations: [["inside(f,k)"], ["ontop(f,floor)"]]
     },
+    { world: "small",
+        utterance: "put a black ball in a box on the floor",
+        interpretations: [["inside(f,k)"], ["ontop(f,floor)"]]
+    }
 ];
 // /* Simple test cases for the ALL quantifier, uncomment if you want */
 // allTestCases.push(

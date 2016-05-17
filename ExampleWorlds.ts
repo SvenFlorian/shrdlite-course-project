@@ -75,7 +75,7 @@ ExampleWorlds["medium"] = {
 
 
 ExampleWorlds["small"] = { 
-    "stacks": [["e"],["g","l"],[],["k","m","f"],[]],
+    "stacks": [["e"],["g","l"],[],["k","m", "f"],[]],
     "holding": "a",
     "arm": 0,
     "objects": {

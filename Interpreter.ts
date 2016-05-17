@@ -108,7 +108,7 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
         var interpretation : DNFFormula;
         interpretation = [
             ];
-        if(cmd.command == "pick up" || cmd.command == "grasp" || cmd.command == "take") {
+        if(cmd.command == "take") {
           var potentialObjs : Array<string> = getMatchingObjects(cmd.entity.object, mObject, mString, state).toArray();
           for(var i = 0; i < potentialObjs.length; i++) {
             var obj : string = potentialObjs[i];
@@ -118,8 +118,9 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
             }
           }
 
-        }else if (cmd.command == "move" || cmd.command == "put" || cmd.command == "drop") {
-          var potentialObjs : Array<string> = getMatchingObjects(cmd.entity.object, mObject, mString, state).toArray();
+        }else if (cmd.command == "move" || cmd.command == "put") {
+          var potentialObjs : Array<string> = (cmd.entity == undefined) ? [state.holding] : 
+              getMatchingObjects(cmd.entity.object, mObject, mString, state).toArray();
           var potentialLocs : Array<string> = getMatchingObjects(cmd.location.entity.object, mObject, mString, state).toArray();
           for(var i = 0; i < potentialObjs.length; i++) {
             var obj : string = potentialObjs[i];
@@ -241,6 +242,13 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
           mString[index++] = state.stacks[i][j];
         }
       }
+
+      if (state.holding != null) {
+        mObject[index] = state.objects[state.holding];
+        mString[index++] = state.holding;
+      }
+
+      console.log("\n\nOMG OMG State.holding: " + state.holding);
 
       return [mObject, mString];
     }
