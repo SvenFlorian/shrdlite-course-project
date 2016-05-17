@@ -225,8 +225,6 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
         mString[index++] = state.holding;
       }
 
-      console.log("\n\nOMG OMG State.holding: " + state.holding);
-
       return [mObject, mString];
     }
 
@@ -260,11 +258,24 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
     /**
     @returns the intersection of given set and the set of objects that are feasible due to the given relation
     */
-    function pruneList(original : collections.Set<string>, relativeData : collections.Set<string>, relation : string, state : WorldState) : collections.Set<string> {
+    function pruneList(original : collections.Set<string>, relative : collections.Set<string>, relation : string, state : WorldState) : collections.Set<string> {
       var matchingObjects : collections.Set<string> = new collections.Set<string>();
-      var relative : Array<string> = relativeData.toArray();
+      var objects1 : Array<string> = original.toArray();
+      var objects2 : Array<string> = relative.toArray();
+
+      for (var i = 0; i < objects1.length; i++) {
+        for (var j = 0; j < objects2.length; j++) {
+          if (matchesRelation(objects1[i], objects2[j], relation, state)) {
+            matchingObjects.add(objects1[i]);
+            break;
+          }
+        }
+      }
+      
+      return matchingObjects;
+
       //loop through every object in the stack and find the objects that fulfill the relation
-      switch (relation) {
+      /*switch (relation) {
         case "ontop":
           for (var k = 0; k < relative.length; k++) {
             if (relative[k] == "floor") {
@@ -374,6 +385,49 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
         default: break;
       }
         original.intersection(matchingObjects);
-        return original;
+        return original;*/
+    }
+    
+    //function matchesRelation(original : collections.Set<string>, relative : collections.Set<string>, relation : string, state : WorldState) : boolean {
+    function matchesRelation(original : string, relative : string, relation : string, state : WorldState) : boolean {
+      var row1 : number; var row2 : number; var col1 : number; var col2 : number;
+      [col1, row1] = findObjectInWorld(original, state);
+      [col2, row2] = findObjectInWorld(relative, state);
+
+      if (relative == "floor") {
+        switch (relation) {
+        case "ontop": if (row1 == 0) { return true; } break;
+        case "above": return true; 
+        default: return false;
+        }
+
+        return false;
+      }
+
+      if (row1 < 0 || row2 < 0 || col1 < 0 || col2 < 0) { return false; }
+      switch (relation) {
+        case "ontop": //fall through to "inside" case
+        case "inside": if (col1 == col2 && row1 == row2 + 1) { return true; } break;
+        case "above": if (col1 == col2 && row1 > row2) { return true; } break;
+        case "under": if (col1 == col2 && row1 < row2) { return true; } break;
+        case "leftof": if (col1 < col2) { return true; } break;
+        case "rightof": if (col1 > col2) { return true; } break;
+        case "beside": if (col1 + 1 == col2 || col1 == col2 + 1) { return true; } break;
+        default: break;
+      }
+
+      return false;
+    }
+
+    function findObjectInWorld(object : string, state : WorldState) : [number, number] {
+      for (var i = 0; i < state.stacks.length; i++) {
+        for (var j = 0; j < state.stacks[i].length; j++) {
+          if (object == state.stacks[i][j]) {
+            return [i, j];
+          }
+        }
+      }
+
+      return [-1, -1];
     }
 }
