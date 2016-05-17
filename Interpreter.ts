@@ -119,7 +119,7 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
           }
 
         }else if (cmd.command == "move" || cmd.command == "put") {
-          var potentialObjs : Array<string> = (cmd.entity == undefined) ? [state.holding] : 
+          var potentialObjs : Array<string> = (cmd.entity == undefined) ? [state.holding] :
               getMatchingObjects(cmd.entity.object, mObject, mString, state).toArray();
           var potentialLocs : Array<string> = getMatchingObjects(cmd.location.entity.object, mObject, mString, state).toArray();
           for(var i = 0; i < potentialObjs.length; i++) {
@@ -164,16 +164,45 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
 
       switch (lit.relation) {
         case "ontop":
-          if (obj2.form != "table" && obj2.form != "floor") {
+          if(obj2.form == "box" || obj1.form == "floor"){
             return false;
-          }else if (obj2.form == "table" && obj1.form == "ball") {
+          }
+          if(obj1 == "ball" && obj2.form != "floor"){
+            return false;
+          }
+          if((obj1.form == "box" && obj1.size == "small") && (obj2.size == "small" && (obj2.form == "brick" || obj2.form == "pyramid"))){
+            return false;
+          }
+          if((obj1.size == "large" && obj1.form == "box") && (obj2.form == "pyramid")){
+            return false;
+          }
+          if(obj2.size == "small" && obj1.size == "large"){
+            return false;
+          }
+          if (obj2.form == "table" && obj1.form == "ball") {
             return false;
           }
           break;
         case "inside":
-          if (obj2.form != "box") {
+          if (obj2.form != "box" || obj1.form == "floor") {
             return false;
-          }else if ((obj1.size == obj2.size && obj1.form != "ball")||(obj1.size == "large" && obj2.size == "small")) {
+          }else if ((obj1.size == obj2.size && (obj1.form != "ball" && obj1.form != "brick"))||
+                    (obj1.size == "large" && obj2.size == "small")) {
+            return false;
+          }
+          break;
+        case "leftof":
+          if(obj2.form == "floor" || obj1.form == "floor"){
+            return false;
+          }
+          break;
+        case "rightof":
+          if(obj2.form == "floor" || obj1.form == "floor"){
+            return false;
+          }
+          break;
+        case "beside":
+          if(obj2.form == "floor" || obj1.form == "floor"){
             return false;
           }
           break;
@@ -184,7 +213,7 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
           if (obj1.size == "large" && obj2.size == "small") {
              return false;
           }
-          if (lit.args[0] == "floor") {
+          if (obj1.form == "floor") {
              return false;
           }
           break;
@@ -195,7 +224,7 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
           if (obj1.size == "small" && obj2.size == "large") {
             return false;
           }
-          if (lit.args[1] == "floor") {
+          if (obj2.form == "floor") {
             return false;
           }
           break;
