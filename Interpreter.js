@@ -208,131 +208,88 @@ var Interpreter;
             return pruneList(originalDataset, relativeDataset, relation, state);
         }
     }
-    function pruneList(original, relativeData, relation, state) {
+    function pruneList(original, relative, relation, state) {
         var matchingObjects = new collections.Set();
-        var relative = relativeData.toArray();
+        var objects1 = original.toArray();
+        var objects2 = relative.toArray();
+        for (var i = 0; i < objects1.length; i++) {
+            for (var j = 0; j < objects2.length; j++) {
+                if (matchesRelation(objects1[i], objects2[j], relation, state)) {
+                    matchingObjects.add(objects1[i]);
+                    break;
+                }
+            }
+        }
+        return matchingObjects;
+    }
+    function matchesRelation(original, relative, relation, state) {
+        var row1;
+        var row2;
+        var col1;
+        var col2;
+        _a = findObjectInWorld(original, state), col1 = _a[0], row1 = _a[1];
+        _b = findObjectInWorld(relative, state), col2 = _b[0], row2 = _b[1];
+        if (relative == "floor") {
+            switch (relation) {
+                case "ontop":
+                    if (row1 == 0) {
+                        return true;
+                    }
+                    break;
+                case "above": return true;
+                default: return false;
+            }
+            return false;
+        }
+        if (row1 < 0 || row2 < 0 || col1 < 0 || col2 < 0) {
+            return false;
+        }
         switch (relation) {
             case "ontop":
-                for (var k = 0; k < relative.length; k++) {
-                    if (relative[k] == "floor") {
-                        for (var l = 0; l < state.stacks.length; l++) {
-                            if (state.stacks[l].length > 0) {
-                                matchingObjects.add(state.stacks[l][0]);
-                            }
-                        }
-                        break;
-                    }
-                    if (state.objects[relative[k]].form == "box") {
-                        continue;
-                    }
-                    for (var i = 0; i < state.stacks.length; i++) {
-                        for (var j = 0; j < state.stacks[i].length - 1; j++) {
-                            if (state.stacks[i][j] == relative[k]) {
-                                matchingObjects.add(state.stacks[i][j + 1]);
-                            }
-                        }
-                    }
-                }
-                break;
             case "inside":
-                for (var k = 0; k < relative.length; k++) {
-                    if (state.objects[relative[k]].form != "box") {
-                        continue;
-                    }
-                    for (var i = 0; i < state.stacks.length; i++) {
-                        for (var j = 0; j < state.stacks[i].length - 1; j++) {
-                            if (state.stacks[i][j] == relative[k]) {
-                                matchingObjects.add(state.stacks[i][j + 1]);
-                            }
-                        }
-                    }
+                if (col1 == col2 && row1 == row2 + 1) {
+                    return true;
                 }
                 break;
             case "above":
-                for (var k = 0; k < relative.length; k++) {
-                    if (relative[k] == "floor") {
-                        var orig = original.toArray();
-                        for (var l = 0; l < orig.length; l++) {
-                            matchingObjects.add(orig[l]);
-                        }
-                        break;
-                    }
-                    for (var i = 0; i < state.stacks.length; i++) {
-                        for (var j = 0; j < state.stacks[i].length - 1; j++) {
-                            if (state.stacks[i][j] == relative[k]) {
-                                for (; j < state.stacks[i].length - 1; j++) {
-                                    matchingObjects.add(state.stacks[i][j + 1]);
-                                }
-                                break;
-                            }
-                        }
-                    }
+                if (col1 == col2 && row1 > row2) {
+                    return true;
                 }
                 break;
             case "under":
-                for (var k = 0; k < relative.length; k++) {
-                    for (var i = 0; i < state.stacks.length; i++) {
-                        for (var j = 1; j < state.stacks[i].length; j++) {
-                            if (state.stacks[i][j] == relative[k]) {
-                                for (var m = 0; m < j; m++) {
-                                    matchingObjects.add(state.stacks[i][m]);
-                                }
-                                break;
-                            }
-                        }
-                    }
+                if (col1 == col2 && row1 < row2) {
+                    return true;
                 }
                 break;
             case "leftof":
-                var foundSomething = state.stacks.length;
-                for (var i = state.stacks.length - 1; i >= 0; i--) {
-                    for (var j = 0; j < state.stacks[i].length; j++) {
-                        for (var k = 0; k < relative.length; k++) {
-                            if (state.stacks[i][j] == relative[k]) {
-                                foundSomething = i;
-                            }
-                            if (foundSomething > i) {
-                                matchingObjects.add(state.stacks[i][j]);
-                            }
-                        }
-                    }
+                if (col1 < col2) {
+                    return true;
                 }
                 break;
             case "rightof":
-                var foundSomething = state.stacks.length;
-                for (var i = 0; i < state.stacks.length - 1; i++) {
-                    for (var j = 0; j < state.stacks[i].length; j++) {
-                        for (var k = 0; k < relative.length; k++) {
-                            if (state.stacks[i][j] == relative[k]) {
-                                foundSomething = i;
-                            }
-                            if (foundSomething < i) {
-                                matchingObjects.add(state.stacks[i][j]);
-                            }
-                        }
-                    }
+                if (col1 > col2) {
+                    return true;
                 }
                 break;
             case "beside":
-                for (var k = 0; k < relative.length; k++) {
-                    for (var i = 0; i < state.stacks.length; i++) {
-                        for (var j = 0; j < state.stacks[i].length; j++) {
-                            if (state.stacks[i][j] == relative[k]) {
-                                for (var m = 0; i > 0 && m < state.stacks[i - 1].length; m++) {
-                                    matchingObjects.add(state.stacks[i - 1][m]);
-                                }
-                                for (var n = 0; i < state.stacks.length - 1 && n < state.stacks[i + 1].length; n++) {
-                                    matchingObjects.add(state.stacks[i + 1][n]);
-                                }
-                                break;
-                            }
-                        }
-                    }
+                if (col1 + 1 == col2 || col1 == col2 + 1) {
+                    return true;
                 }
                 break;
             default: break;
         }
-        original.intersection(matchingObjects);
-        return original;
+        return false;
+        var _a, _b;
+    }
+    Interpreter.matchesRelation = matchesRelation;
+    function findObjectInWorld(object, state) {
+        for (var i = 0; i < state.stacks.length; i++) {
+            for (var j = 0; j < state.stacks[i].length; j++) {
+                if (object == state.stacks[i][j]) {
+                    return [i, j];
+                }
+            }
+        }
+        return [-1, -1];
     }
 })(Interpreter || (Interpreter = {}));

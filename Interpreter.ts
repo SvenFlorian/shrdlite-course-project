@@ -300,125 +300,12 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
           }
         }
       }
-      
-      return matchingObjects;
 
-      //loop through every object in the stack and find the objects that fulfill the relation
-      /*switch (relation) {
-        case "ontop":
-          for (var k = 0; k < relative.length; k++) {
-            if (relative[k] == "floor") {
-              for (var l = 0; l < state.stacks.length; l++) {
-                if (state.stacks[l].length > 0) {
-                  matchingObjects.add(state.stacks[l][0]);
-                }
-              }
-              break;
-            }
-            if (state.objects[relative[k]].form == "box") { continue; }
-            for (var i = 0; i < state.stacks.length; i++) {
-              for (var j = 0; j < state.stacks[i].length - 1; j++) {
-                if (state.stacks[i][j] == relative[k]) {
-                  matchingObjects.add(state.stacks[i][j+1]);
-                }
-              }
-            }
-          }
-        break;
-        case "inside":
-          for (var k = 0; k < relative.length; k++) {
-            if (state.objects[relative[k]].form != "box") { continue; }
-            for (var i = 0; i < state.stacks.length; i++) {
-              for (var j = 0; j < state.stacks[i].length - 1; j++) {
-                if (state.stacks[i][j] == relative[k]) {
-                  matchingObjects.add(state.stacks[i][j+1]);
-                }
-              }
-            }
-          }
-        break;
-        case "above":
-          for (var k = 0; k < relative.length; k++) {
-            if (relative[k] == "floor") {
-              var orig : Array<string> = original.toArray();
-              for (var l = 0; l < orig.length; l++) {
-                matchingObjects.add(orig[l]);
-              }
-              break;
-            }
-            for (var i = 0; i < state.stacks.length; i++) {
-              for (var j = 0; j < state.stacks[i].length - 1; j++) {
-                if (state.stacks[i][j] == relative[k]) {
-                  for (; j < state.stacks[i].length - 1; j++) {
-                    matchingObjects.add(state.stacks[i][j+1]);
-                  }
-                  break;
-                }
-              }
-            }
-          }
-        break;
-        case "under":
-          for (var k = 0; k < relative.length; k++) {
-            for (var i = 0; i < state.stacks.length; i++) {
-              for (var j = 1; j < state.stacks[i].length; j++) {
-                if (state.stacks[i][j] == relative[k]) {
-                  for (var m = 0; m < j; m++) {
-                    matchingObjects.add(state.stacks[i][m]);
-                  }
-                  break;
-                }
-              }
-            }
-          }
-        break;
-        case "leftof":
-          var foundSomething : number = state.stacks.length;
-          for (var i = state.stacks.length - 1; i >= 0; i--) {
-            for (var j = 0; j < state.stacks[i].length; j++) {
-              for (var k = 0; k < relative.length; k++) {
-                if (state.stacks[i][j] == relative[k]) { foundSomething = i; }
-                if (foundSomething > i) { matchingObjects.add(state.stacks[i][j]); }
-              }
-            }
-          }
-        break;
-        case "rightof":
-          var foundSomething : number = state.stacks.length;
-          for (var i = 0; i < state.stacks.length - 1; i++) {
-            for (var j = 0; j < state.stacks[i].length; j++) {
-              for (var k = 0; k < relative.length; k++) {
-                if (state.stacks[i][j] == relative[k]) { foundSomething = i; }
-                if (foundSomething < i) { matchingObjects.add(state.stacks[i][j]); }
-              }
-            }
-          }
-        break;
-        case "beside":
-          for (var k = 0; k < relative.length; k++) {
-            for (var i = 0; i < state.stacks.length; i++) {
-              for (var j = 0; j < state.stacks[i].length; j++) {
-                if (state.stacks[i][j] == relative[k]) {
-                  for (var m = 0; i > 0 && m < state.stacks[i-1].length; m++) {
-                    matchingObjects.add(state.stacks[i-1][m]);
-                  }
-                  for (var n = 0; i < state.stacks.length - 1 && n < state.stacks[i+1].length; n++) {
-                    matchingObjects.add(state.stacks[i+1][n]);
-                  }
-                  break;
-                }
-              }
-            }
-          }
-        break;
-        default: break;
-      }
-        original.intersection(matchingObjects);
-        return original;*/
+      return matchingObjects;
     }
-    
-    //function matchesRelation(original : collections.Set<string>, relative : collections.Set<string>, relation : string, state : WorldState) : boolean {
-    function matchesRelation(original : string, relative : string, relation : string, state : WorldState) : boolean {
+
+    //@returns true if relation(original,relative) is true in state
+    export function matchesRelation(original : string, relative : string, relation : string, state : WorldState) : boolean {
       var row1 : number; var row2 : number; var col1 : number; var col2 : number;
       [col1, row1] = findObjectInWorld(original, state);
       [col2, row2] = findObjectInWorld(relative, state);
@@ -426,7 +313,7 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
       if (relative == "floor") {
         switch (relation) {
         case "ontop": if (row1 == 0) { return true; } break;
-        case "above": return true; 
+        case "above": return true;
         default: return false;
         }
 
