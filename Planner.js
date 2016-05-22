@@ -28,9 +28,39 @@ var Planner;
         return result.plan.join(", ");
     }
     Planner.stringify = stringify;
+    function StringifyState(state) {
+        var s = "";
+        for (var i = 0; i < state.stacks.length; i++) {
+            for (var j = 0; j < state.stacks.length; j++) {
+                if (state.stacks[i][j] == undefined) {
+                    continue;
+                }
+                s += state.stacks[i][j];
+            }
+            s += "+";
+        }
+        s += state.arm;
+        s += state.holding;
+        return s;
+    }
+    var StateGraph = (function () {
+        function StateGraph() {
+        }
+        StateGraph.prototype.outgoingEdges = function (node) {
+            return null;
+        };
+        StateGraph.prototype.compareNodes = function (s1, s2) {
+            return null;
+        };
+        return StateGraph;
+    }());
     function planInterpretation(interpretation, state) {
+        var stateGraph = new StateGraph();
+        var heuristics = function huer(node) {
+            return 0;
+        };
         var goalFunction = function goalf(node) {
-            var world = node.getState();
+            var world = node;
             var result = false;
             for (var i = 0; i < interpretation.length; i++) {
                 var l = interpretation[i][0];
@@ -42,6 +72,8 @@ var Planner;
             }
             return result;
         };
+        console.log(StringifyState(state));
+        aStarSearch(stateGraph, state, goalFunction, heuristics, 10);
         do {
             var pickstack = Math.floor(Math.random() * state.stacks.length);
         } while (state.stacks[pickstack].length == 0);

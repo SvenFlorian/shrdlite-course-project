@@ -1,5 +1,6 @@
 ///<reference path="World.ts"/>
 ///<reference path="Interpreter.ts"/>
+///<reference path="Graph.ts"/>
 
 /**
 * Planner module
@@ -53,6 +54,31 @@ module Planner {
         return result.plan.join(", ");
     }
 
+    function StringifyState(state : WorldState): string {
+      var s :string = "";
+      for(var i : number = 0; i < state.stacks.length; i++) {
+        for(var j : number = 0; j < state.stacks.length; j++) {
+          if(state.stacks[i][j] == undefined){
+            continue;
+          }
+          s+=state.stacks[i][j];
+        }
+        s+="+";
+      }
+      s+=state.arm;
+      s+=state.holding;
+      return s;
+    }
+    class StateGraph implements Graph<WorldState>{
+      /** Computes the edges that leave from a node. */
+      outgoingEdges(node : WorldState) : Edge<WorldState>[] {
+        return null; //TODO
+      }
+      /** A function that compares nodes. */
+      compareNodes(s1 : WorldState, s2 : WorldState) : number {
+        return null; //TODO
+      }
+    }
     //////////////////////////////////////////////////////////////////////
     // private functions
 
@@ -75,12 +101,15 @@ module Planner {
      * be added using the `push` method.
      */
     function planInterpretation(interpretation : Interpreter.DNFFormula, state : WorldState) : string[] {
+      var stateGraph : StateGraph = new StateGraph();
 
-
-      var goalFunction = function goalf(node : Node) : boolean {
-        var world : WorldState = node.getState(); // how do we make this happen?
+      //TODO heuristics function
+      var heuristics = function huer(node : WorldState) : number {
+        return 0;
+      }
+      var goalFunction = function goalf(node : WorldState) : boolean {
+        var world : WorldState = node; // how do we make this happen?
         var result : boolean = false;
-
         for(var i : number = 0; i < interpretation.length; i++) {
             var l : Interpreter.Literal = interpretation[i][0]; //assuming just 1 literal per potential goal
             var subResult : boolean = Interpreter.matchesRelation(l.args[0] ,l.args[1], l.relation, world);
@@ -92,6 +121,9 @@ module Planner {
         return result;
       }
 
+      console.log(StringifyState(state));
+
+      aStarSearch(stateGraph,state,goalFunction,heuristics,10);
 
 
         // This function returns a dummy plan involving a random stack
