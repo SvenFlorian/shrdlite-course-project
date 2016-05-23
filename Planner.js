@@ -43,11 +43,44 @@ var Planner;
         s += state.holding;
         return s;
     }
+    function cloneStacks(s) {
+        var newStackList = new Array();
+        for (var i = 0; i < s.length; i++) {
+            var newStack = new Array();
+            for (var j = 0; j < s[i].length; j++) {
+                newStack.push(s[i][j]);
+            }
+            newStackList.push(newStack);
+        }
+        return newStackList;
+    }
     var StateGraph = (function () {
         function StateGraph() {
         }
         StateGraph.prototype.outgoingEdges = function (node) {
-            return null;
+            var edgeList = new Array();
+            var actions = getPossibleActions(node);
+            for (var i = 0; i < actions.length; i++) {
+                var newState = { arm: node.arm, stacks: cloneStacks(node.stacks),
+                    holding: node.holding, objects: node.objects, examples: node.examples };
+                switch (actions[i]) {
+                    case "r":
+                        newState.arm += 1;
+                        break;
+                    case "l":
+                        newState.arm -= 1;
+                        break;
+                    case "d":
+                        newState.stacks[newState.arm].push(newState.holding);
+                        newState.holding = undefined;
+                        break;
+                    case "p":
+                        newState.holding = newState.stacks[newState.arm].pop();
+                        break;
+                }
+                var newEdge = new Edge();
+            }
+            return edgeList;
         };
         StateGraph.prototype.compareNodes = function (s1, s2) {
             return null;

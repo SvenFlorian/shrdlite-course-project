@@ -1,6 +1,7 @@
 ///<reference path="World.ts"/>
 ///<reference path="Interpreter.ts"/>
 ///<reference path="Graph.ts"/>
+///<reference path="World.ts"/>
 
 /**
 * Planner module
@@ -69,10 +70,44 @@ module Planner {
       s+=state.holding;
       return s;
     }
-    class StateGraph implements Graph<WorldState>{
+    function cloneStacks(s : Stack[]) : Stack[] { // A lot of computation will be done here
+      var newStackList : Stack[] = new Array<Array<string>>();
+      for(var i : number = 0; i < s.length ; i++) {
+        var newStack : Stack = new Array<string>();
+        for(var j : number = 0; j < s[i].length ; j++) {
+          newStack.push(s[i][j]);
+        }
+        newStackList.push(newStack);
+      }
+      return newStackList;
+    }
+
+    class StateGraph implements Graph<WorldState> {
       /** Computes the edges that leave from a node. */
       outgoingEdges(node : WorldState) : Edge<WorldState>[] {
-        return null; //TODO
+        var edgeList : Edge<WorldState>[] = new Array<Edge<WorldState>>();
+        var actions : String[] = getPossibleActions(node);
+        for(var i :number = 0; i < actions.length; i++) {
+          var newState : WorldState = {arm: node.arm, stacks: cloneStacks(node.stacks),
+                holding: node.holding, objects : node.objects, examples : node.examples}
+          switch (actions[i]) {
+            case "r":
+              newState.arm += 1; //not sure if this is the right direction
+              break;
+            case "l":
+              newState.arm -= 1;
+              break;
+            case "d":
+              newState.stacks[newState.arm].push(newState.holding);
+              newState.holding = undefined;
+              break;
+            case "p":
+              newState.holding = newState.stacks[newState.arm].pop();
+              break;
+          }
+          var newEdge : Edge<WorldState> = new Edge<WorldState>();
+        }
+        return edgeList;
       }
       /** A function that compares nodes. */
       compareNodes(s1 : WorldState, s2 : WorldState) : number {
