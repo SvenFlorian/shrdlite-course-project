@@ -54,6 +54,16 @@ var Planner;
         }
         return newStackList;
     }
+    function moveArm(state, n) {
+        state.arm += n;
+    }
+    function drop(state) {
+        state.stacks[state.arm].push(state.holding);
+        state.holding = undefined;
+    }
+    function pickup(state) {
+        state.holding = state.stacks[state.arm].pop();
+    }
     var StateGraph = (function () {
         function StateGraph() {
         }
@@ -65,17 +75,16 @@ var Planner;
                     holding: node.holding, objects: node.objects, examples: node.examples };
                 switch (actions[i]) {
                     case "r":
-                        newState.arm += 1;
+                        moveArm(newState, 1);
                         break;
                     case "l":
-                        newState.arm -= 1;
+                        moveArm(newState, -1);
                         break;
                     case "d":
-                        newState.stacks[newState.arm].push(newState.holding);
-                        newState.holding = undefined;
+                        drop(newState);
                         break;
                     case "p":
-                        newState.holding = newState.stacks[newState.arm].pop();
+                        pickup(newState);
                         break;
                 }
                 var newEdge = new Edge();
@@ -122,36 +131,26 @@ var Planner;
             }
             return result;
         };
-        aStarSearch(stateGraph, state, goalFunction, heuristics, 10);
-        do {
-            var pickstack = Math.floor(Math.random() * state.stacks.length);
-        } while (state.stacks[pickstack].length == 0);
-        var plan = [];
-        if (pickstack < state.arm) {
-            plan.push("Moving left");
-            for (var i = state.arm; i > pickstack; i--) {
-                plan.push("l");
-            }
-        }
-        else if (pickstack > state.arm) {
-            plan.push("Moving right");
-            for (var i = state.arm; i < pickstack; i++) {
+        var result = aStarSearch(stateGraph, state, goalFunction, heuristics, 10);
+        var plan = new Array();
+        for (var i = 0; i < result.path.length - 1; i++) {
+            var current = result.path[i];
+            var next = result.path[i + 1];
+            if (current.arm + 1 == next.arm) {
                 plan.push("r");
+                break;
             }
-        }
-        var obj = state.stacks[pickstack][state.stacks[pickstack].length - 1];
-        plan.push("Picking up the " + state.objects[obj].form, "p");
-        if (pickstack < state.stacks.length - 1) {
-            plan.push("Moving as far right as possible");
-            for (var i = pickstack; i < state.stacks.length - 1; i++) {
-                plan.push("r");
-            }
-            plan.push("Moving back");
-            for (var i = state.stacks.length - 1; i > pickstack; i--) {
+            if (current.arm - 1 == next.arm) {
                 plan.push("l");
+                break;
+            }
+            if (current.holding == undefined) {
+                plan.push("p");
+            }
+            else {
+                plan.push("d");
             }
         }
-        plan.push("Dropping the " + state.objects[obj].form, "d");
         return plan;
     }
 })(Planner || (Planner = {}));

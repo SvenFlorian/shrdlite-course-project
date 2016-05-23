@@ -81,7 +81,16 @@ module Planner {
       }
       return newStackList;
     }
-
+    function moveArm(state : WorldState, n :number) {
+      state.arm += n;
+    }
+    function drop(state : WorldState) {
+      state.stacks[state.arm].push(state.holding);
+      state.holding = undefined;
+    }
+    function pickup(state : WorldState) {
+      state.holding = state.stacks[state.arm].pop();
+    }
     class StateGraph implements Graph<WorldState> {
       /** Computes the edges that leave from a node. */
       outgoingEdges(node : WorldState) : Edge<WorldState>[] {
@@ -92,17 +101,16 @@ module Planner {
                 holding: node.holding, objects : node.objects, examples : node.examples}
           switch (actions[i]) {
             case "r":
-              newState.arm += 1; //not sure if this is the right direction
+              moveArm(newState,1); //not sure if this is the right direction
               break;
             case "l":
-              newState.arm -= 1;
+              moveArm(newState,-1);
               break;
             case "d":
-              newState.stacks[newState.arm].push(newState.holding);
-              newState.holding = undefined;
+              drop(newState);
               break;
             case "p":
-              newState.holding = newState.stacks[newState.arm].pop();
+              pickup(newState);
               break;
           }
           var newEdge : Edge<WorldState> = new Edge<WorldState>();
@@ -175,53 +183,27 @@ module Planner {
         return result;
       }
 
-      aStarSearch(stateGraph,state,goalFunction,heuristics,10);
+      var result : SearchResult<WorldState> = aStarSearch(stateGraph,state,goalFunction,heuristics,10);
+      var plan : string[] = new Array<string>();
 
-      //TODO use aStarSearchs result to rebuiled the path
-
-
-        // This function returns a dummy plan involving a random stack
-        do {
-            var pickstack = Math.floor(Math.random() * state.stacks.length);
-        } while (state.stacks[pickstack].length == 0);
-        var plan : string[] = [];
-
-        // First move the arm to the leftmost nonempty stack
-        if (pickstack < state.arm) {
-            plan.push("Moving left");
-            for (var i = state.arm; i > pickstack; i--) {
-                plan.push("l");
-            }
-        } else if (pickstack > state.arm) {
-            plan.push("Moving right");
-            for (var i = state.arm; i < pickstack; i++) {
-                plan.push("r");
-            }
+      for(var i : number = 0; i < result.path.length-1; i++) {
+        var current : WorldState = result.path[i];
+        var next : WorldState = result.path[i+1];
+        if(current.arm + 1 == next.arm) {
+          plan.push("r");
+          break;
         }
-
-        // Then pick up the object
-        var obj = state.stacks[pickstack][state.stacks[pickstack].length-1];
-        plan.push("Picking up the " + state.objects[obj].form,
-                  "p");
-
-        if (pickstack < state.stacks.length-1) {
-            // Then move to the rightmost stack
-            plan.push("Moving as far right as possible");
-            for (var i = pickstack; i < state.stacks.length-1; i++) {
-                plan.push("r");
-            }
-
-            // Then move back
-            plan.push("Moving back");
-            for (var i = state.stacks.length-1; i > pickstack; i--) {
-                plan.push("l");
-            }
+        if(current.arm - 1 == next.arm) {
+          plan.push("l");
+          break;
         }
+        if(current.holding == undefined) {
+          plan.push("p");
+        }else{
+          plan.push("d");
+        }
+      }
 
-        // Finally put it down again
-        plan.push("Dropping the " + state.objects[obj].form,
-                  "d");
-
-        return plan;
+      return plan;
     }
 }
