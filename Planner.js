@@ -79,11 +79,25 @@ var Planner;
                         break;
                 }
                 var newEdge = new Edge();
+                newEdge.from = node;
+                newEdge.to = newState;
+                newEdge.cost = 1;
+                edgeList.push(newEdge);
             }
             return edgeList;
         };
         StateGraph.prototype.compareNodes = function (s1, s2) {
-            return null;
+            if (s1.arm != s2.arm || s1.holding != s2.holding) {
+                return 1;
+            }
+            for (var i = 0; i < s1.stacks.length; i++) {
+                for (var j = 0; j < s1.stacks.length; j++) {
+                    if (s1.stacks[i][j] != s1.stacks[i][j]) {
+                        return 1;
+                    }
+                }
+            }
+            return 0;
         };
         return StateGraph;
     }());

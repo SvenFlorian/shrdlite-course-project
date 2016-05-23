@@ -106,12 +106,26 @@ module Planner {
               break;
           }
           var newEdge : Edge<WorldState> = new Edge<WorldState>();
+          newEdge.from = node;
+          newEdge.to = newState;
+          newEdge.cost = 1;
+          edgeList.push(newEdge);
         }
         return edgeList;
       }
       /** A function that compares nodes. */
       compareNodes(s1 : WorldState, s2 : WorldState) : number {
-        return null; //TODO
+        if (s1.arm != s2.arm || s1.holding != s2.holding) {
+          return 1;
+        }
+        for(var i : number = 0; i < s1.stacks.length; i++) {
+          for(var j : number = 0; j < s1.stacks.length; j++) {
+            if(s1.stacks[i][j] != s1.stacks[i][j]){
+              return 1;
+            }
+          }
+        }
+        return 0;
       }
     }
     //returns all possible actions in the current world state, "r" "l" "p" "d"
