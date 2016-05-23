@@ -79,6 +79,11 @@ module Planner {
         return null; //TODO
       }
     }
+    //returns all possible actions in the current world state, "r" "l" "p" "d"
+    function getPossibleActions(w1 : WorldState) : string[] {
+      return null;
+    }
+
     //////////////////////////////////////////////////////////////////////
     // private functions
 
@@ -121,9 +126,9 @@ module Planner {
         return result;
       }
 
-      console.log(StringifyState(state));
-
       aStarSearch(stateGraph,state,goalFunction,heuristics,10);
+
+      //TODO use aStarSearchs result to rebuiled the path
 
 
         // This function returns a dummy plan involving a random stack

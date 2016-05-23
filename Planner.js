@@ -54,6 +54,9 @@ var Planner;
         };
         return StateGraph;
     }());
+    function getPossibleActions(w1) {
+        return null;
+    }
     function planInterpretation(interpretation, state) {
         var stateGraph = new StateGraph();
         var heuristics = function huer(node) {
@@ -72,7 +75,6 @@ var Planner;
             }
             return result;
         };
-        console.log(StringifyState(state));
         aStarSearch(stateGraph, state, goalFunction, heuristics, 10);
         do {
             var pickstack = Math.floor(Math.random() * state.stacks.length);
