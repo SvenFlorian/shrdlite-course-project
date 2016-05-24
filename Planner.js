@@ -111,7 +111,28 @@ var Planner;
         return StateGraph;
     }());
     function getPossibleActions(w1) {
-        return null;
+        var result;
+        var temp = w1.stacks[w1.arm].pop();
+        w1.stacks[w1.arm].push(temp);
+        var obj2 = w1.objects[temp];
+        var obj = w1.objects[w1.holding];
+        if (w1.arm != 0) {
+            result.push("l");
+        }
+        if (w1.arm < w1.stacks.length) {
+            result.push("r");
+        }
+        if (temp != null) {
+            result.push("p");
+        }
+        if (!(obj.form == "ball" && obj2.form != null) ||
+            (!((obj.form == "box" && obj.size == "small") && (obj2.size == "small" && (obj2.form == "brick" || obj2.form == "pyramid")))) ||
+            (!((obj.size == "large" && obj.form == "box") && (obj2.form == "pyramid"))) ||
+            (!(obj2.size == "small" && obj.size == "large")) ||
+            (!(obj2.form == "ball")) || (w1.stacks[w1.arm].length < 5)) {
+            result.push("d");
+        }
+        return result;
     }
     function planInterpretation(interpretation, state) {
         var stateGraph = new StateGraph();
