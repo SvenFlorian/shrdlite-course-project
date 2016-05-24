@@ -128,7 +128,7 @@ module Planner {
         }
         for(var i : number = 0; i < s1.stacks.length; i++) {
           for(var j : number = 0; j < s1.stacks.length; j++) {
-            if(s1.stacks[i][j] != s1.stacks[i][j]){
+            if(s1.stacks[i][j] != s2.stacks[i][j]){
               return 1;
             }
           }
@@ -138,9 +138,14 @@ module Planner {
     }
     //returns all possible actions in the current world state, "r" "l" "p" "d"
     function getPossibleActions(w1 : WorldState) : string[] {
-      var result : string[];
+      var result : string[] = new Array<string>();
+      if (w1 == undefined) {
+        return result;
+      }
       var temp : string = w1.stacks[w1.arm].pop();
-      w1.stacks[w1.arm].push(temp);
+      if(temp != null) {
+        w1.stacks[w1.arm].push(temp);
+      }
       var obj2 : ObjectDefinition = w1.objects[temp];
       var obj : ObjectDefinition = w1.objects[w1.holding];
 

@@ -101,7 +101,7 @@ var Planner;
             }
             for (var i = 0; i < s1.stacks.length; i++) {
                 for (var j = 0; j < s1.stacks.length; j++) {
-                    if (s1.stacks[i][j] != s1.stacks[i][j]) {
+                    if (s1.stacks[i][j] != s2.stacks[i][j]) {
                         return 1;
                     }
                 }
@@ -111,9 +111,14 @@ var Planner;
         return StateGraph;
     }());
     function getPossibleActions(w1) {
-        var result;
+        var result = new Array();
+        if (w1 == undefined) {
+            return result;
+        }
         var temp = w1.stacks[w1.arm].pop();
-        w1.stacks[w1.arm].push(temp);
+        if (temp != null) {
+            w1.stacks[w1.arm].push(temp);
+        }
         var obj2 = w1.objects[temp];
         var obj = w1.objects[w1.holding];
         if (w1.arm != 0) {
