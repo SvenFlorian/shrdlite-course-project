@@ -66,9 +66,16 @@ var Planner;
     }
     var WorldStateNode = (function () {
         function WorldStateNode(state) {
+            this.identifier = null;
             this.state = state;
         }
         WorldStateNode.prototype.toString = function (state) {
+            if (state == null) {
+                return "";
+            }
+            if (this.identifier != null) {
+                return this.identifier;
+            }
             var s = "";
             for (var i = 0; i < state.stacks.length; i++) {
                 for (var j = 0; j < state.stacks.length; j++) {

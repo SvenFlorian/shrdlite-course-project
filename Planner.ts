@@ -93,10 +93,19 @@ module Planner {
     }
     class WorldStateNode {
       state : WorldState ;
+      private identifier : string = null;
       constructor(state : WorldState) {
        this.state = state;
       }
       toString(state : WorldState): string { //TODO perfrom just once?
+
+        if(state == null) {
+          return "";
+        }
+
+        if(this.identifier != null) {
+          return this.identifier;
+        }
         var s :string = "";
         for(var i : number = 0; i < state.stacks.length; i++) {
           for(var j : number = 0; j < state.stacks.length; j++) {
