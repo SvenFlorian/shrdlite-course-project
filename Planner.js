@@ -28,7 +28,7 @@ var Planner;
         return result.plan.join(", ");
     }
     Planner.stringify = stringify;
-    function StringifyState(state) {
+    function toString(state) {
         var s = "";
         for (var i = 0; i < state.stacks.length; i++) {
             for (var j = 0; j < state.stacks.length; j++) {
@@ -64,15 +64,39 @@ var Planner;
     function pickup(state) {
         state.holding = state.stacks[state.arm].pop();
     }
+    var WorldStateNode = (function () {
+        function WorldStateNode(state) {
+            this.state = state;
+        }
+        WorldStateNode.prototype.toString = function (state) {
+            var s = "";
+            for (var i = 0; i < state.stacks.length; i++) {
+                for (var j = 0; j < state.stacks.length; j++) {
+                    if (state.stacks[i][j] == undefined) {
+                        continue;
+                    }
+                    s += state.stacks[i][j];
+                }
+                s += "+";
+            }
+            s += state.arm;
+            s += state.holding;
+            return s;
+        };
+        return WorldStateNode;
+    }());
     var StateGraph = (function () {
         function StateGraph() {
         }
         StateGraph.prototype.outgoingEdges = function (node) {
             var edgeList = new Array();
-            var actions = getPossibleActions(node);
+            if (node == undefined) {
+                return edgeList;
+            }
+            var actions = getPossibleActions(node.state);
             for (var i = 0; i < actions.length; i++) {
-                var newState = { arm: node.arm, stacks: cloneStacks(node.stacks),
-                    holding: node.holding, objects: node.objects, examples: node.examples };
+                var newState = { arm: node.state.arm, stacks: cloneStacks(node.state.stacks),
+                    holding: node.state.holding, objects: node.state.objects, examples: node.state.examples };
                 switch (actions[i]) {
                     case "r":
                         moveArm(newState, 1);
@@ -89,13 +113,18 @@ var Planner;
                 }
                 var newEdge = new Edge();
                 newEdge.from = node;
-                newEdge.to = newState;
+                newEdge.to = new WorldStateNode(newState);
                 newEdge.cost = 1;
                 edgeList.push(newEdge);
             }
             return edgeList;
         };
-        StateGraph.prototype.compareNodes = function (s1, s2) {
+        StateGraph.prototype.compareNodes = function (n1, n2) {
+            var s1 = n1.state;
+            var s2 = n2.state;
+            if (s1 == null || s2 == null) {
+                return 0;
+            }
             if (s1.arm != s2.arm || s1.holding != s2.holding) {
                 return 1;
             }
@@ -145,7 +174,7 @@ var Planner;
             return 0;
         };
         var goalFunction = function goalf(node) {
-            var world = node;
+            var world = node.state;
             var result = false;
             for (var i = 0; i < interpretation.length; i++) {
                 var l = interpretation[i][0];
@@ -157,11 +186,11 @@ var Planner;
             }
             return result;
         };
-        var result = aStarSearch(stateGraph, state, goalFunction, heuristics, 10);
+        var result = aStarSearch(stateGraph, new WorldStateNode(state), goalFunction, heuristics, 10);
         var plan = new Array();
         for (var i = 0; i < result.path.length - 1; i++) {
-            var current = result.path[i];
-            var next = result.path[i + 1];
+            var current = result.path[i].state;
+            var next = result.path[i + 1].state;
             if (current.arm + 1 == next.arm) {
                 plan.push("r");
                 break;

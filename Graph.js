@@ -61,6 +61,7 @@ function aStarSearch(graph, start, goal, heuristics, timeout) {
         }
         for (var i = 0; i < graph.outgoingEdges(currentNode).length; i++) {
             var newNode = graph.outgoingEdges(currentNode)[i].to;
+            console.log(visitedNodes.size());
             if (visitedNodes.contains(newNode)) {
                 continue;
             }

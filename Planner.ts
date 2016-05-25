@@ -55,7 +55,7 @@ module Planner {
         return result.plan.join(", ");
     }
 
-    function StringifyState(state : WorldState): string {
+    function toString(state : WorldState): string {
       var s :string = "";
       for(var i : number = 0; i < state.stacks.length; i++) {
         for(var j : number = 0; j < state.stacks.length; j++) {
@@ -91,14 +91,39 @@ module Planner {
     function pickup(state : WorldState) {
       state.holding = state.stacks[state.arm].pop();
     }
-    class StateGraph implements Graph<WorldState> {
+    class WorldStateNode {
+      state : WorldState ;
+      constructor(state : WorldState) {
+       this.state = state;
+      }
+      toString(state : WorldState): string { //TODO perfrom just once?
+        var s :string = "";
+        for(var i : number = 0; i < state.stacks.length; i++) {
+          for(var j : number = 0; j < state.stacks.length; j++) {
+            if(state.stacks[i][j] == undefined){
+              continue;
+            }
+            s+=state.stacks[i][j];
+          }
+          s+="+";
+        }
+        s+=state.arm;
+        s+=state.holding;
+        return s;
+      }
+    }
+    class StateGraph implements Graph<WorldStateNode> {
       /** Computes the edges that leave from a node. */
-      outgoingEdges(node : WorldState) : Edge<WorldState>[] {
-        var edgeList : Edge<WorldState>[] = new Array<Edge<WorldState>>();
-        var actions : String[] = getPossibleActions(node);
+      outgoingEdges(node : WorldStateNode) : Edge<WorldStateNode>[] {
+
+        var edgeList : Edge<WorldStateNode>[] = new Array<Edge<WorldStateNode>>();
+        if(node == undefined) {
+          return edgeList;
+        }
+        var actions : String[] = getPossibleActions(node.state);
         for(var i :number = 0; i < actions.length; i++) {
-          var newState : WorldState = {arm: node.arm, stacks: cloneStacks(node.stacks),
-                holding: node.holding, objects : node.objects, examples : node.examples}
+          var newState : WorldState = {arm: node.state.arm, stacks: cloneStacks(node.state.stacks),
+                holding: node.state.holding, objects : node.state.objects, examples : node.state.examples}
           switch (actions[i]) {
             case "r":
               moveArm(newState,1); //not sure if this is the right direction
@@ -113,16 +138,21 @@ module Planner {
               pickup(newState);
               break;
           }
-          var newEdge : Edge<WorldState> = new Edge<WorldState>();
+          var newEdge : Edge<WorldStateNode> = new Edge<WorldStateNode>();
           newEdge.from = node;
-          newEdge.to = newState;
+          newEdge.to = new WorldStateNode(newState);
           newEdge.cost = 1;
           edgeList.push(newEdge);
         }
         return edgeList;
       }
       /** A function that compares nodes. */
-      compareNodes(s1 : WorldState, s2 : WorldState) : number {
+      compareNodes(n1 : WorldStateNode, n2 : WorldStateNode) : number {
+        var s1 : WorldState = n1.state;
+        var s2 : WorldState = n2.state;
+        if(s1 == null || s2 == null) {
+          return 0;
+        }
         if (s1.arm != s2.arm || s1.holding != s2.holding) {
           return 1;
         }
@@ -191,13 +221,12 @@ module Planner {
      */
     function planInterpretation(interpretation : Interpreter.DNFFormula, state : WorldState) : string[] {
       var stateGraph : StateGraph = new StateGraph();
-
       //TODO heuristics function
-      var heuristics = function huer(node : WorldState) : number {
+      var heuristics = function huer(node : WorldStateNode) : number {
         return 0;
       }
-      var goalFunction = function goalf(node : WorldState) : boolean {
-        var world : WorldState = node; // how do we make this happen?
+      var goalFunction = function goalf(node : WorldStateNode) : boolean {
+        var world : WorldState = node.state;
         var result : boolean = false;
         for(var i : number = 0; i < interpretation.length; i++) {
             var l : Interpreter.Literal = interpretation[i][0]; //assuming just 1 literal per potential goal
@@ -210,12 +239,12 @@ module Planner {
         return result;
       }
 
-      var result : SearchResult<WorldState> = aStarSearch(stateGraph,state,goalFunction,heuristics,10);
+      var result : SearchResult<WorldStateNode> = aStarSearch(stateGraph,new WorldStateNode(state),goalFunction,heuristics,10);
       var plan : string[] = new Array<string>();
 
       for(var i : number = 0; i < result.path.length-1; i++) {
-        var current : WorldState = result.path[i];
-        var next : WorldState = result.path[i+1];
+        var current : WorldState = result.path[i].state;
+        var next : WorldState = result.path[i+1].state;
         if(current.arm + 1 == next.arm) {
           plan.push("r");
           break;

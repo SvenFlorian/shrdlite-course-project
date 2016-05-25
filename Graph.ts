@@ -112,6 +112,7 @@ function aStarSearch<Node> (
 		//add currentnode's neighbours to frontier and calculate costs
 		for (var i = 0; i < graph.outgoingEdges(currentNode).length; i++) {
       var newNode : Node = graph.outgoingEdges(currentNode)[i].to;
+      console.log(visitedNodes.size());
       if (visitedNodes.contains(newNode)) {
         continue;
       }
