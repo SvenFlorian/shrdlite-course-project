@@ -238,7 +238,6 @@ module Planner {
         }
         return result;
       }
-
       var result : SearchResult<WorldStateNode> = aStarSearch(stateGraph,new WorldStateNode(state),goalFunction,heuristics,10);
       var plan : string[] = new Array<string>();
 
