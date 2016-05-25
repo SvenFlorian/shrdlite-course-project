@@ -55,21 +55,6 @@ module Planner {
         return result.plan.join(", ");
     }
 
-    function toString(state : WorldState): string {
-      var s :string = "";
-      for(var i : number = 0; i < state.stacks.length; i++) {
-        for(var j : number = 0; j < state.stacks.length; j++) {
-          if(state.stacks[i][j] == undefined){
-            continue;
-          }
-          s+=state.stacks[i][j];
-        }
-        s+="+";
-      }
-      s+=state.arm;
-      s+=state.holding;
-      return s;
-    }
     function cloneStacks(s : Stack[]) : Stack[] { // A lot of computation will be done here
       var newStackList : Stack[] = new Array<Array<string>>();
       for(var i : number = 0; i < s.length ; i++) {
@@ -97,9 +82,9 @@ module Planner {
       constructor(state : WorldState) {
        this.state = state;
       }
-      toString(state : WorldState): string { //TODO perfrom just once?
+      toString(): string { //TODO perfrom just once?
 
-        if(state == null) {
+        if(this.state == null) {
           return "";
         }
 
@@ -107,17 +92,17 @@ module Planner {
           return this.identifier;
         }
         var s :string = "";
-        for(var i : number = 0; i < state.stacks.length; i++) {
-          for(var j : number = 0; j < state.stacks.length; j++) {
-            if(state.stacks[i][j] == undefined){
+        for(var i : number = 0; i < this.state.stacks.length; i++) {
+          for(var j : number = 0; j < this.state.stacks.length; j++) {
+            if(this.state.stacks[i][j] == undefined){
               continue;
             }
-            s+=state.stacks[i][j];
+            s+=this.state.stacks[i][j];
           }
           s+="+";
         }
-        s+=state.arm;
-        s+=state.holding;
+        s+=this.state.arm;
+        s+=this.state.holding;
         return s;
       }
     }
@@ -178,26 +163,34 @@ module Planner {
     //returns all possible actions in the current world state, "r" "l" "p" "d"
     function getPossibleActions(w1 : WorldState) : string[] {
       var result : string[] = new Array<string>();
-      if (w1 == undefined) {
+      if (w1 == null) {
         return result;
       }
       var temp : string = w1.stacks[w1.arm].pop();
       if(temp != null) {
         w1.stacks[w1.arm].push(temp);
       }
-      var obj2 : ObjectDefinition = w1.objects[temp];
-      var obj : ObjectDefinition = w1.objects[w1.holding];
 
-      if(w1.arm != 0) {
+      if(w1.arm > 0) {
         result.push("l");
       }
-      if(w1.arm < w1.stacks.length) {
+      if(w1.arm < w1.stacks.length - 1) {
         result.push("r");
       }
       if(temp != null) {
         result.push("p");
       }
-      if(!(obj.form == "ball" && obj2.form != null) ||
+      var obj2 : ObjectDefinition = w1.objects[temp];
+      var obj : ObjectDefinition = w1.objects[w1.holding];
+      if(obj2 == null)
+      {
+        result.push("d");
+      }
+      if((obj2 == null) || (obj == null))
+      {
+        return result;
+      }
+      if(!(obj.form == "ball" && obj2.form != "box") ||
       (!((obj.form == "box" && obj.size == "small") && (obj2.size == "small" && (obj2.form == "brick" || obj2.form == "pyramid"))))||
       (!((obj.size == "large" && obj.form == "box") && (obj2.form == "pyramid"))) ||
       (!(obj2.size == "small" && obj.size == "large")) ||
@@ -247,7 +240,7 @@ module Planner {
         }
         return result;
       }
-      var result : SearchResult<WorldStateNode> = aStarSearch(stateGraph,new WorldStateNode(state),goalFunction,heuristics,10);
+      var result : SearchResult<WorldStateNode> = aStarSearch(stateGraph,new WorldStateNode(state),goalFunction,heuristics,100);
       var plan : string[] = new Array<string>();
 
       for(var i : number = 0; i < result.path.length-1; i++) {

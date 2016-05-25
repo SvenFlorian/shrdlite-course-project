@@ -113,6 +113,8 @@ function aStarSearch<Node> (
 		for (var i = 0; i < graph.outgoingEdges(currentNode).length; i++) {
       var newNode : Node = graph.outgoingEdges(currentNode)[i].to;
       console.log(visitedNodes.size());
+      var arr  = visitedNodes.toArray();
+      //console.log(arr[0].toString());
       if (visitedNodes.contains(newNode)) {
         continue;
       }

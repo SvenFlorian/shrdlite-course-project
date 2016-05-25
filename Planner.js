@@ -28,21 +28,6 @@ var Planner;
         return result.plan.join(", ");
     }
     Planner.stringify = stringify;
-    function toString(state) {
-        var s = "";
-        for (var i = 0; i < state.stacks.length; i++) {
-            for (var j = 0; j < state.stacks.length; j++) {
-                if (state.stacks[i][j] == undefined) {
-                    continue;
-                }
-                s += state.stacks[i][j];
-            }
-            s += "+";
-        }
-        s += state.arm;
-        s += state.holding;
-        return s;
-    }
     function cloneStacks(s) {
         var newStackList = new Array();
         for (var i = 0; i < s.length; i++) {
@@ -69,25 +54,25 @@ var Planner;
             this.identifier = null;
             this.state = state;
         }
-        WorldStateNode.prototype.toString = function (state) {
-            if (state == null) {
+        WorldStateNode.prototype.toString = function () {
+            if (this.state == null) {
                 return "";
             }
             if (this.identifier != null) {
                 return this.identifier;
             }
             var s = "";
-            for (var i = 0; i < state.stacks.length; i++) {
-                for (var j = 0; j < state.stacks.length; j++) {
-                    if (state.stacks[i][j] == undefined) {
+            for (var i = 0; i < this.state.stacks.length; i++) {
+                for (var j = 0; j < this.state.stacks.length; j++) {
+                    if (this.state.stacks[i][j] == undefined) {
                         continue;
                     }
-                    s += state.stacks[i][j];
+                    s += this.state.stacks[i][j];
                 }
                 s += "+";
             }
-            s += state.arm;
-            s += state.holding;
+            s += this.state.arm;
+            s += this.state.holding;
             return s;
         };
         return WorldStateNode;
@@ -148,25 +133,31 @@ var Planner;
     }());
     function getPossibleActions(w1) {
         var result = new Array();
-        if (w1 == undefined) {
+        if (w1 == null) {
             return result;
         }
         var temp = w1.stacks[w1.arm].pop();
         if (temp != null) {
             w1.stacks[w1.arm].push(temp);
         }
-        var obj2 = w1.objects[temp];
-        var obj = w1.objects[w1.holding];
-        if (w1.arm != 0) {
+        if (w1.arm > 0) {
             result.push("l");
         }
-        if (w1.arm < w1.stacks.length) {
+        if (w1.arm < w1.stacks.length - 1) {
             result.push("r");
         }
         if (temp != null) {
             result.push("p");
         }
-        if (!(obj.form == "ball" && obj2.form != null) ||
+        var obj2 = w1.objects[temp];
+        var obj = w1.objects[w1.holding];
+        if (obj2 == null) {
+            result.push("d");
+        }
+        if ((obj2 == null) || (obj == null)) {
+            return result;
+        }
+        if (!(obj.form == "ball" && obj2.form != "box") ||
             (!((obj.form == "box" && obj.size == "small") && (obj2.size == "small" && (obj2.form == "brick" || obj2.form == "pyramid")))) ||
             (!((obj.size == "large" && obj.form == "box") && (obj2.form == "pyramid"))) ||
             (!(obj2.size == "small" && obj.size == "large")) ||
@@ -193,7 +184,7 @@ var Planner;
             }
             return result;
         };
-        var result = aStarSearch(stateGraph, new WorldStateNode(state), goalFunction, heuristics, 10);
+        var result = aStarSearch(stateGraph, new WorldStateNode(state), goalFunction, heuristics, 100);
         var plan = new Array();
         for (var i = 0; i < result.path.length - 1; i++) {
             var current = result.path[i].state;
