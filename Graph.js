@@ -59,14 +59,15 @@ function aStarSearch(graph, start, goal, heuristics, timeout) {
             };
             return result;
         }
-        for (var i = 0; i < graph.outgoingEdges(currentNode).length; i++) {
-            var newNode = graph.outgoingEdges(currentNode)[i].to;
+        var edges = graph.outgoingEdges(currentNode);
+        for (var i = 0; i < edges.length; i++) {
+            var newNode = edges[i].to;
             console.log(visitedNodes.size());
             var arr = visitedNodes.toArray();
             if (visitedNodes.contains(newNode)) {
                 continue;
             }
-            var cost = graph.outgoingEdges(currentNode)[i].cost + totalCost(currentNode);
+            var cost = edges[i].cost + totalCost(currentNode);
             if (!frontier.contains(newNode)) {
                 MapCost.setValue(newNode, cost);
                 frontier.enqueue(newNode);

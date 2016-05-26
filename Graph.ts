@@ -108,17 +108,16 @@ function aStarSearch<Node> (
       };
       return result;
     }
-
+    var edges : Edge<Node>[] = graph.outgoingEdges(currentNode);
 		//add currentnode's neighbours to frontier and calculate costs
-		for (var i = 0; i < graph.outgoingEdges(currentNode).length; i++) {
-      var newNode : Node = graph.outgoingEdges(currentNode)[i].to;
+		for (var i = 0; i < edges.length; i++) {
+      var newNode : Node = edges[i].to;
       console.log(visitedNodes.size());
       var arr  = visitedNodes.toArray();
-      //console.log(arr[0].toString());
       if (visitedNodes.contains(newNode)) {
         continue;
       }
-      var cost : number = graph.outgoingEdges(currentNode)[i].cost+totalCost(currentNode);
+      var cost : number = edges[i].cost+totalCost(currentNode);
       if (!frontier.contains(newNode)) {
         MapCost.setValue(newNode,cost);
   			frontier.enqueue(newNode);
