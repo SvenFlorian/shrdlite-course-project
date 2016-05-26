@@ -248,11 +248,11 @@ module Planner {
         var next : WorldState = result.path[i+1].state;
         if(current.arm + 1 == next.arm) {
           plan.push("r");
-          break;
+          continue;
         }
         if(current.arm - 1 == next.arm) {
           plan.push("l");
-          break;
+          continue;
         }
         if(current.holding == undefined) {
           plan.push("p");
