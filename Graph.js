@@ -62,7 +62,6 @@ function aStarSearch(graph, start, goal, heuristics, timeout) {
         var edges = graph.outgoingEdges(currentNode);
         for (var i = 0; i < edges.length; i++) {
             var newNode = edges[i].to;
-            console.log(newNode.toString() + " :h= " + heuristics(newNode));
             var arr = visitedNodes.toArray();
             if (visitedNodes.contains(newNode)) {
                 continue;

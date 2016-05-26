@@ -56,16 +56,16 @@ var Planner;
         }
         WorldStateNode.prototype.toString = function () {
             if (this.state == null) {
-                return "";
+                throw new Error("this state is null!");
             }
             if (this.identifier != null) {
                 return this.identifier;
             }
             var s = "";
             for (var i = 0; i < this.state.stacks.length; i++) {
-                for (var j = 0; j < this.state.stacks.length; j++) {
+                for (var j = 0; j < this.state.stacks[i].length; j++) {
                     if (this.state.stacks[i][j] == undefined) {
-                        continue;
+                        break;
                     }
                     s += this.state.stacks[i][j];
                 }
@@ -109,6 +109,8 @@ var Planner;
                 newEdge.cost = 1;
                 edgeList.push(newEdge);
             }
+            console.log(actions.toString());
+            console.log(node.toString());
             return edgeList;
         };
         StateGraph.prototype.compareNodes = function (n1, n2) {
@@ -136,24 +138,23 @@ var Planner;
         if (w1 == null) {
             return result;
         }
-        var temp = w1.stacks[w1.arm].pop();
-        if (temp != null) {
-            w1.stacks[w1.arm].push(temp);
-        }
         if (w1.arm > 0) {
             result.push("l");
         }
         if (w1.arm < w1.stacks.length - 1) {
             result.push("r");
         }
-        if (temp != null) {
+        if (w1.holding == undefined) {
             result.push("p");
+            return result;
         }
+        if (w1.stacks[w1.arm].length == 0) {
+            result.push("d");
+            return result;
+        }
+        var temp = w1.stacks[w1.arm][w1.stacks[w1.arm].length - 1];
         var obj2 = w1.objects[temp];
         var obj = w1.objects[w1.holding];
-        if (obj2 == null) {
-            result.push("d");
-        }
         if ((obj2 == null) || (obj == null)) {
             return result;
         }

@@ -112,7 +112,7 @@ function aStarSearch<Node> (
 		//add currentnode's neighbours to frontier and calculate costs
 		for (var i = 0; i < edges.length; i++) {
       var newNode : Node = edges[i].to;
-      console.log(newNode.toString() + " :h= " + heuristics(newNode));
+      //console.log(newNode.toString() + " :h= " + heuristics(newNode));
       var arr  = visitedNodes.toArray();
       if (visitedNodes.contains(newNode)) {
         continue;

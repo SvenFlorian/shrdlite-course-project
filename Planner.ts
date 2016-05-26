@@ -83,19 +83,18 @@ module Planner {
        this.state = state;
       }
       toString(): string { //TODO perfrom just once?
-
         if(this.state == null) {
-          return "";
+          throw new Error("this state is null!");
+          //return "";
         }
-
         if(this.identifier != null) {
           return this.identifier;
         }
         var s :string = "";
         for(var i : number = 0; i < this.state.stacks.length; i++) {
-          for(var j : number = 0; j < this.state.stacks.length; j++) {
+          for(var j : number = 0; j < this.state.stacks[i].length; j++) {
             if(this.state.stacks[i][j] == undefined){
-              continue;
+              break;
             }
             s+=this.state.stacks[i][j];
           }
@@ -115,12 +114,13 @@ module Planner {
           return edgeList;
         }
         var actions : String[] = getPossibleActions(node.state);
+
         for(var i :number = 0; i < actions.length; i++) {
           var newState : WorldState = {arm: node.state.arm, stacks: cloneStacks(node.state.stacks),
                 holding: node.state.holding, objects : node.state.objects, examples : node.state.examples}
           switch (actions[i]) {
             case "r":
-              moveArm(newState,1); //not sure if this is the right direction
+              moveArm(newState,1);
               break;
             case "l":
               moveArm(newState,-1);
@@ -138,6 +138,8 @@ module Planner {
           newEdge.cost = 1;
           edgeList.push(newEdge);
         }
+        console.log(actions.toString());
+        console.log(node.toString());
         return edgeList;
       }
       /** A function that compares nodes. */
@@ -166,26 +168,26 @@ module Planner {
       if (w1 == null) {
         return result;
       }
-      var temp : string = w1.stacks[w1.arm].pop();
-      if(temp != null) {
-        w1.stacks[w1.arm].push(temp);
-      }
-
       if(w1.arm > 0) {
         result.push("l");
       }
       if(w1.arm < w1.stacks.length - 1) {
         result.push("r");
       }
-      if(temp != null) {
-        result.push("p");
+
+      if(w1.holding == undefined) {
+          result.push("p");
+          return result;
       }
+      if(w1.stacks[w1.arm].length == 0) {
+        result.push("d");
+        return result;
+      }
+      var temp : string = w1.stacks[w1.arm][w1.stacks[w1.arm].length-1];
+
       var obj2 : ObjectDefinition = w1.objects[temp];
       var obj : ObjectDefinition = w1.objects[w1.holding];
-      if(obj2 == null)
-      {
-        result.push("d");
-      }
+
       if((obj2 == null) || (obj == null))
       {
         return result;
@@ -242,7 +244,9 @@ module Planner {
      * be added using the `push` method.
      */
     function planInterpretation(interpretation : Interpreter.DNFFormula, state : WorldState) : string[] {
+      //var testNode : WorldStateNode = new WorldStateNode(state);
       var stateGraph : StateGraph = new StateGraph();
+
       //TODO heuristics function
       var heuristics = function heuristics(node : WorldStateNode) : number {
         var minhcost : number = Infinity;
