@@ -199,7 +199,27 @@ module Planner {
       }
       return result;
     }
-
+    function huer(ws : WorldState, lit : Interpreter.Literal) : number {
+      var cost : number = 0;
+      if(lit.relation == "holding"){
+        var desiredObject : string = lit.args[0];
+        if(ws.holding = desiredObject) {
+          return 0;
+        }
+        cost+= Math.abs(ws.arm-posOf(desiredObject,ws));
+      }
+      return cost;
+    }
+    function posOf(s : string, ws : WorldState) : number {
+      var result : number = -1; //returns -1 if it is being held or it doesnt exist
+      for(var i : number = 0; i < ws.stacks.length; i++) {
+          result = ws.stacks[i].indexOf(s);
+          if (result != -1){
+            return result;
+          }
+      }
+      return -1;
+    }
     //////////////////////////////////////////////////////////////////////
     // private functions
 
@@ -224,8 +244,12 @@ module Planner {
     function planInterpretation(interpretation : Interpreter.DNFFormula, state : WorldState) : string[] {
       var stateGraph : StateGraph = new StateGraph();
       //TODO heuristics function
-      var heuristics = function huer(node : WorldStateNode) : number {
-        return 0;
+      var heuristics = function heuristics(node : WorldStateNode) : number {
+        var minhcost : number = Infinity;
+        for(var i : number = 0; i < interpretation.length; i++) {
+          minhcost = Math.min(minhcost,huer(node.state,interpretation[i][0]));
+        }
+        return 0;//return minhcost;
       }
       var goalFunction = function goalf(node : WorldStateNode) : boolean {
         var world : WorldState = node.state;

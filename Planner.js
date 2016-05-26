@@ -166,9 +166,34 @@ var Planner;
         }
         return result;
     }
+    function huer(ws, lit) {
+        var cost = 0;
+        if (lit.relation == "holding") {
+            var desiredObject = lit.args[0];
+            if (ws.holding = desiredObject) {
+                return 0;
+            }
+            cost += Math.abs(ws.arm - posOf(desiredObject, ws));
+        }
+        return cost;
+    }
+    function posOf(s, ws) {
+        var result = -1;
+        for (var i = 0; i < ws.stacks.length; i++) {
+            result = ws.stacks[i].indexOf(s);
+            if (result != -1) {
+                return result;
+            }
+        }
+        return -1;
+    }
     function planInterpretation(interpretation, state) {
         var stateGraph = new StateGraph();
-        var heuristics = function huer(node) {
+        var heuristics = function heuristics(node) {
+            var minhcost = Infinity;
+            for (var i = 0; i < interpretation.length; i++) {
+                minhcost = Math.min(minhcost, huer(node.state, interpretation[i][0]));
+            }
             return 0;
         };
         var goalFunction = function goalf(node) {
