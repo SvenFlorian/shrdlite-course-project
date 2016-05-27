@@ -218,12 +218,26 @@ module Planner {
         case "under" :
           break
         case "beside" :
-          break
+          var obj : string = lit.args[0];
+          var locPos : number = posOf(lit.args[1], ws);
+          var costLeft : number = Infinity;
+          var costRight : number = Infinity;
+          if( locPos < ws.stacks.length - 1)
+          {
+             costRight = moveCost(locPos + 1, ws);
+          }
+          if(locPos > 0)
+          {
+             costLeft = moveCost(locPos - 1, ws);
+          }
+          return Math.min(costLeft, costRight);
         case "leftof" :
-          break
+          var objPos : number = posOf(lit.args[0], ws);
+          return moveCost( objPos, ws);
         case "rightof" :
-          break
-      }
+          var objPos : number = posOf(lit.args[0], ws);
+          return moveCost( objPos, ws);
+        }
       return cost;
     }
     function clearStackCost(index : number,ws : WorldState){
