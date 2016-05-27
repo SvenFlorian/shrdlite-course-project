@@ -2644,18 +2644,23 @@ var Interpreter;
         var interpretation;
         interpretation = [];
         if (cmd.command == "take") {
-            var potentialObjs = getMatchingObjects(cmd.entity.object, mObject, mString, state).toArray();
-            for (var i = 0; i < potentialObjs.length; i++) {
-                var obj = potentialObjs[i];
-                var lit = { polarity: true, relation: "holding", args: [obj] };
-                if (isFeasible(lit, state)) {
-                    interpretation.push([lit]);
+            if (cmd.entity == null && state.holding == null) {
+                throw new Error("Cannot take 'it', be more specific!");
+            }
+            else {
+                var potentialObjs = getMatchingObjects(cmd.entity.object, mObject, mString, state).toArray();
+                for (var i = 0; i < potentialObjs.length; i++) {
+                    var obj = potentialObjs[i];
+                    var lit = { polarity: true, relation: "holding", args: [obj] };
+                    if (isFeasible(lit, state)) {
+                        interpretation.push([lit]);
+                    }
                 }
             }
         }
         else if (cmd.command == "move" || cmd.command == "put") {
-            if (cmd.entity == null) {
-                throw new Error("Holding nothing! Cannot put 'it'");
+            if (cmd.entity == null && state.holding == null) {
+                throw new Error("Holding nothing! Cannot move/put 'it'");
             }
             else {
                 var potentialObjs = (cmd.entity == undefined) ? [state.holding] :
@@ -3231,26 +3236,79 @@ var Planner;
         }
         return result;
     }
-    function huer(ws, lit) {
+    function heur(ws, lit) {
         var cost = 0;
-        if (lit.relation == "holding") {
-            var desiredObject = lit.args[0];
-            if (ws.holding == desiredObject) {
-                return 0;
-            }
-            cost += Math.abs(ws.arm - posOf(desiredObject, ws));
+        switch (lit.relation) {
+            case "holding":
+                ;
+                cost = pickupCost(lit.args[0], ws);
+                break;
+            case "ontop":
+                var obj = lit.args[0];
+                var objPos = posOf(obj, ws);
+                var loc = lit.args[1];
+                var locPos = posOf(loc, ws);
+                if (loc == "floor") {
+                }
+                cost += pickupCost(obj, ws);
+                cost += dropCost(loc, ws);
+                break;
+            case "inside":
+                break;
+            case "above":
+                break;
+            case "under":
+                break;
+            case "beside":
+                break;
+            case "leftof":
+                break;
+            case "rightof":
+                break;
         }
         return cost;
     }
+    function dropCost(desiredObject, ws) {
+        return 0;
+    }
+    function pickupCost(desiredObject, ws) {
+        var cost = 0;
+        if (ws.holding == desiredObject) {
+            return 0;
+        }
+        var pos = posOf(desiredObject, ws);
+        cost += Math.abs(ws.arm - pos);
+        cost += nrOfItemsOnTopOf(desiredObject, ws, pos) * 4;
+        if (ws.holding != undefined) {
+            cost += 3;
+        }
+        return cost;
+    }
+    function nrOfItemsOnTopOf(s, ws, pos) {
+        if (ws.holding == s) {
+            return 0;
+        }
+        var result = 0;
+        for (var i = 0; i < ws.stacks[pos].length; i++) {
+            if (ws.stacks[pos][i] == s) {
+                break;
+            }
+            result++;
+        }
+        return result;
+    }
     function posOf(s, ws) {
         var result = -1; //returns -1 if it is being held or it doesnt exist
+        if (s == "floor") {
+            return Infinity;
+        }
         for (var i = 0; i < ws.stacks.length; i++) {
             result = ws.stacks[i].indexOf(s);
             if (result != -1) {
                 return result;
             }
         }
-        return -1;
+        return result;
     }
     //////////////////////////////////////////////////////////////////////
     // private functions
@@ -3293,9 +3351,10 @@ var Planner;
         var heuristics = function heuristics(node) {
             var minhcost = Infinity;
             for (var i = 0; i < interpretation.length; i++) {
-                minhcost = Math.min(minhcost, huer(node.state, interpretation[i][0]));
+                minhcost = Math.min(minhcost, heur(node.state, interpretation[i][0]));
             }
-            return 0; //return minhcost;
+            console.log(minhcost);
+            return minhcost; //return minhcost;
         };
         var goalFunction = function goalf(node) {
             var world = node.state;

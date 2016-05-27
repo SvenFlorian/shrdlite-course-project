@@ -171,47 +171,83 @@ var Planner;
         var cost = 0;
         switch (lit.relation) {
             case "holding":
-                ;
-                cost = pickupCost(lit.args[0], ws);
-                break;
+                var pos = posOf(lit.args[0], ws);
+                cost += pickupCost(lit.args[0], ws, pos);
+                cost += moveCost(pos, ws);
+                return cost;
             case "ontop":
-                var obj = lit.args[0];
-                var objPos = posOf(obj, ws);
-                var loc = lit.args[1];
-                var locPos = posOf(loc, ws);
-                if (loc == "floor") {
-                }
-                cost += pickupCost(obj, ws);
-                cost += dropCost(loc, ws);
-                break;
+                return onTopCost(ws, lit);
             case "inside":
-                break;
+                return onTopCost(ws, lit);
             case "above":
                 break;
             case "under":
                 break;
             case "beside":
-                break;
+                var obj = lit.args[0];
+                var locPos = posOf(lit.args[1], ws);
+                var costLeft = Infinity;
+                var costRight = Infinity;
+                if (locPos < ws.stacks.length - 1) {
+                    costRight = moveCost(locPos + 1, ws);
+                }
+                if (locPos > 0) {
+                    costLeft = moveCost(locPos - 1, ws);
+                }
+                return Math.min(costLeft, costRight);
             case "leftof":
-                break;
+                var objPos = posOf(lit.args[0], ws);
+                return moveCost(objPos, ws);
             case "rightof":
-                break;
+                var objPos = posOf(lit.args[0], ws);
+                return moveCost(objPos, ws);
         }
         return cost;
     }
-    function dropCost(desiredObject, ws) {
-        return 0;
+    function onTopCost(ws, lit) {
+        var obj = lit.args[0];
+        var loc = lit.args[1];
+        var pos1 = posOf(obj, ws);
+        var pos2 = posOf(loc, ws);
+        console.log(moveCost(pos1, ws));
+        console.log(moveCost(pos2, ws));
+        console.log(pickupCost(obj, ws, pos1));
+        return pickupCost(obj, ws, pos1) + dropCost(loc, ws, pos2) + Math.max(moveCost(pos1, ws), moveCost(pos2, ws));
     }
-    function pickupCost(desiredObject, ws) {
+    function moveCost(pos, state) {
+        if (pos == Infinity || pos == -1) {
+            return 0;
+        }
+        else {
+            return Math.abs(state.arm - pos);
+        }
+    }
+    function dropCost(loc, ws, pos) {
+        var cost = 0;
+        if (loc == "floor") {
+            var smallestStack = ws.stacks[0];
+            for (var i = 1; i < ws.stacks.length; i++) {
+                if (ws.stacks[i].length < smallestStack.length) {
+                    smallestStack = ws.stacks[i];
+                }
+            }
+            return smallestStack.length * 4;
+        }
+        if (ws.holding == loc) {
+            return 1;
+        }
+        cost += nrOfItemsOnTopOf(loc, ws, pos) + Math.abs(ws.arm - pos);
+        return cost;
+    }
+    function pickupCost(desiredObject, ws, pos) {
         var cost = 0;
         if (ws.holding == desiredObject) {
             return 0;
         }
-        var pos = posOf(desiredObject, ws);
         cost += Math.abs(ws.arm - pos);
         cost += nrOfItemsOnTopOf(desiredObject, ws, pos) * 4;
         if (ws.holding != undefined) {
-            cost += 3;
+            cost += 2;
         }
         return cost;
     }
@@ -243,21 +279,20 @@ var Planner;
     }
     function planInterpretation2(interpretation, state) {
         var testNode = new WorldStateNode(state);
-        var stateGraph = new StateGraph();
-        var edges = stateGraph.outgoingEdges(testNode);
-        var testNode2 = edges[0].to;
-        var edges = stateGraph.outgoingEdges(testNode2);
-        var testNode3 = edges[0].to;
-        console.log(" " + testNode.toString() + " - actions: " + getPossibleActions(testNode.state));
-        console.log(" " + testNode2.toString() + " - actions: " + getPossibleActions(testNode2.state));
-        console.log(" " + edges[0].to.toString() + " - actions: " + getPossibleActions(edges[0].to.state));
-        console.log(" " + edges[1].to.toString() + " - actions: " + getPossibleActions(edges[1].to.state));
-        console.log(" " + edges[2].to.toString() + " - actions: " + getPossibleActions(edges[2].to.state));
+        var heuristics = function heuristicsf(node) {
+            var minhcost = Infinity;
+            for (var i = 0; i < interpretation.length; i++) {
+                minhcost = Math.min(minhcost, heur(node.state, interpretation[i][0]));
+            }
+            console.log(minhcost);
+            return minhcost;
+        };
+        console.log(" " + testNode.toString() + " - cost: " + heuristics(testNode));
         return null;
     }
     function planInterpretation(interpretation, state) {
         var stateGraph = new StateGraph();
-        var heuristics = function heuristics(node) {
+        var heuristics = function heuristicsf(node) {
             var minhcost = Infinity;
             for (var i = 0; i < interpretation.length; i++) {
                 minhcost = Math.min(minhcost, heur(node.state, interpretation[i][0]));
