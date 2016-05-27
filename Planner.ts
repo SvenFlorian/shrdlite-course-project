@@ -83,10 +83,6 @@ module Planner {
        this.state = state;
       }
       toString(): string { //TODO perfrom just once?
-        if(this.state == null) {
-          throw new Error("this state is null!");
-          //return "";
-        }
         if(this.identifier != null) {
           return this.identifier;
         }
@@ -102,6 +98,7 @@ module Planner {
         }
         s+=this.state.arm;
         s+=this.state.holding;
+        this.identifier=s;
         return s;
       }
     }

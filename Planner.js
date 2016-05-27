@@ -55,9 +55,6 @@ var Planner;
             this.state = state;
         }
         WorldStateNode.prototype.toString = function () {
-            if (this.state == null) {
-                throw new Error("this state is null!");
-            }
             if (this.identifier != null) {
                 return this.identifier;
             }
@@ -73,6 +70,7 @@ var Planner;
             }
             s += this.state.arm;
             s += this.state.holding;
+            this.identifier = s;
             return s;
         };
         return WorldStateNode;
