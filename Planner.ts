@@ -226,46 +226,47 @@ module Planner {
       }
       return cost;
     }
+    function clearStackCost(index : number,ws : WorldState){
+      return ws.stacks[index].length*4+Math.abs(ws.arm-index);
+    }
     function onTopCost(ws : WorldState, lit : Interpreter.Literal) : number {
       var obj : string = lit.args[0];
       var loc : string = lit.args[1];
       var pos1 : number = posOf(obj,ws);
       var pos2 : number = posOf(loc,ws);
-      console.log(moveCost(pos1,ws));
-      console.log(moveCost(pos2,ws));
-      console.log(pickupCost(obj,ws,pos1));
+      if(loc == "floor") {
+        var bestIndex : number = 0;
+        var cost : number = 0;
+        for(var i : number = 1 ; i < ws.stacks.length; i++) {
+          if (clearStackCost(i,ws) < clearStackCost(bestIndex,ws)) {
+            bestIndex = i;
+          }
+        }
+        return pickupCost(obj,ws,pos1) + clearStackCost(bestIndex,ws)+1;
+      }
       return pickupCost(obj,ws,pos1)+dropCost(loc,ws,pos2)+Math.max(moveCost(pos1,ws),moveCost(pos2,ws));
     }
     function moveCost(pos : number,state : WorldState) : number{
-      if(pos == Infinity || pos == -1) { //if floor or holding
+      if(pos == -1) { //if floor or holding
         return 0;
+      }else if(pos == Infinity){
+        throw new Error("floor!");
       }else{
         return Math.abs(state.arm-pos);
       }
     }
     function dropCost(loc : string, ws : WorldState, pos : number) : number {
-      var cost : number = 0;
-      if(loc == "floor") {
-        var smallestStack : Stack = ws.stacks[0];
-        for(var i : number = 1; i < ws.stacks.length; i++) {
-          if (ws.stacks[i].length < smallestStack.length) {
-            smallestStack = ws.stacks[i];
-          }
-        }
-        return smallestStack.length*4;
-      }
       if(ws.holding == loc){ //then pos = -1
         return 1;
       }
-      cost+= nrOfItemsOnTopOf(loc,ws,pos)+Math.abs(ws.arm-pos);
-      return cost;
+      return nrOfItemsOnTopOf(loc,ws,pos)*4+1;
+      ;
     }
     function pickupCost(desiredObject : string, ws : WorldState, pos : number) : number {
       var cost : number = 0;
       if(ws.holding == desiredObject) {
         return 0;
       }
-      cost+= Math.abs(ws.arm-pos);
       cost+= nrOfItemsOnTopOf(desiredObject, ws, pos)*4;
       if (ws.holding != undefined) {
           cost+=2;
@@ -277,7 +278,7 @@ module Planner {
         return 0;
       }
       var result: number = 0;
-      for(var i : number = 0; i < ws.stacks[pos].length; i++) {
+      for(var i : number = ws.stacks[pos].length-1; i >= 0; i--) {
           if(ws.stacks[pos][i] == s) {
             break;
           }
@@ -287,13 +288,14 @@ module Planner {
     }
     function posOf(s : string, ws : WorldState) : number {
       var result : number = -1; //returns -1 if it is being held or it doesnt exist
-      if(s == "floor") { //returns the floor closest to the arm
+      if(s == "floor") {
           return Infinity;
       }
       for(var i : number = 0; i < ws.stacks.length; i++) {
-          result = ws.stacks[i].indexOf(s);
-          if (result != -1){
-            return result;
+          for(var j : number = 0; j < ws.stacks[i].length; j++) {
+            if (ws.stacks[i][j] == s) {
+              return i;
+            }
           }
       }
       return result;
@@ -326,7 +328,6 @@ module Planner {
         for(var i : number = 0; i < interpretation.length; i++) {
           minhcost = Math.min(minhcost,heur(node.state,interpretation[i][0]));
         }
-        console.log(minhcost);
         return minhcost;//return minhcost;
       }
       console.log(" " + testNode.toString() + " - cost: " + heuristics(testNode));
@@ -344,7 +345,6 @@ module Planner {
         for(var i : number = 0; i < interpretation.length; i++) {
           minhcost = Math.min(minhcost,heur(node.state,interpretation[i][0]));
         }
-        console.log(minhcost);
         return minhcost;//return minhcost;
       }
       var goalFunction = function goalf(node : WorldStateNode) : boolean {
@@ -366,7 +366,7 @@ module Planner {
         }
         return result;
       }
-      var result : SearchResult<WorldStateNode> = aStarSearch(stateGraph,new WorldStateNode(state),goalFunction,heuristics,1);
+      var result : SearchResult<WorldStateNode> = aStarSearch(stateGraph,new WorldStateNode(state),goalFunction,heuristics,10);
       var plan : string[] = new Array<string>();
 
       for(var i : number = 0; i < result.path.length-1; i++) {

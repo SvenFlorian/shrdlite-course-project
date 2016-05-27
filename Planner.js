@@ -192,47 +192,49 @@ var Planner;
         }
         return cost;
     }
+    function clearStackCost(index, ws) {
+        return ws.stacks[index].length * 4 + Math.abs(ws.arm - index);
+    }
     function onTopCost(ws, lit) {
         var obj = lit.args[0];
         var loc = lit.args[1];
         var pos1 = posOf(obj, ws);
         var pos2 = posOf(loc, ws);
-        console.log(moveCost(pos1, ws));
-        console.log(moveCost(pos2, ws));
-        console.log(pickupCost(obj, ws, pos1));
+        if (loc == "floor") {
+            var bestIndex = 0;
+            var cost = 0;
+            for (var i = 1; i < ws.stacks.length; i++) {
+                if (clearStackCost(i, ws) < clearStackCost(bestIndex, ws)) {
+                    bestIndex = i;
+                }
+            }
+            return pickupCost(obj, ws, pos1) + clearStackCost(bestIndex, ws) + 1;
+        }
         return pickupCost(obj, ws, pos1) + dropCost(loc, ws, pos2) + Math.max(moveCost(pos1, ws), moveCost(pos2, ws));
     }
     function moveCost(pos, state) {
-        if (pos == Infinity || pos == -1) {
+        if (pos == -1) {
             return 0;
+        }
+        else if (pos == Infinity) {
+            throw new Error("floor!");
         }
         else {
             return Math.abs(state.arm - pos);
         }
     }
     function dropCost(loc, ws, pos) {
-        var cost = 0;
-        if (loc == "floor") {
-            var smallestStack = ws.stacks[0];
-            for (var i = 1; i < ws.stacks.length; i++) {
-                if (ws.stacks[i].length < smallestStack.length) {
-                    smallestStack = ws.stacks[i];
-                }
-            }
-            return smallestStack.length * 4;
-        }
         if (ws.holding == loc) {
             return 1;
         }
-        cost += nrOfItemsOnTopOf(loc, ws, pos) + Math.abs(ws.arm - pos);
-        return cost;
+        return nrOfItemsOnTopOf(loc, ws, pos) * 4 + 1;
+        ;
     }
     function pickupCost(desiredObject, ws, pos) {
         var cost = 0;
         if (ws.holding == desiredObject) {
             return 0;
         }
-        cost += Math.abs(ws.arm - pos);
         cost += nrOfItemsOnTopOf(desiredObject, ws, pos) * 4;
         if (ws.holding != undefined) {
             cost += 2;
@@ -244,7 +246,7 @@ var Planner;
             return 0;
         }
         var result = 0;
-        for (var i = 0; i < ws.stacks[pos].length; i++) {
+        for (var i = ws.stacks[pos].length - 1; i >= 0; i--) {
             if (ws.stacks[pos][i] == s) {
                 break;
             }
@@ -258,9 +260,10 @@ var Planner;
             return Infinity;
         }
         for (var i = 0; i < ws.stacks.length; i++) {
-            result = ws.stacks[i].indexOf(s);
-            if (result != -1) {
-                return result;
+            for (var j = 0; j < ws.stacks[i].length; j++) {
+                if (ws.stacks[i][j] == s) {
+                    return i;
+                }
             }
         }
         return result;
@@ -272,7 +275,6 @@ var Planner;
             for (var i = 0; i < interpretation.length; i++) {
                 minhcost = Math.min(minhcost, heur(node.state, interpretation[i][0]));
             }
-            console.log(minhcost);
             return minhcost;
         };
         console.log(" " + testNode.toString() + " - cost: " + heuristics(testNode));
@@ -285,7 +287,6 @@ var Planner;
             for (var i = 0; i < interpretation.length; i++) {
                 minhcost = Math.min(minhcost, heur(node.state, interpretation[i][0]));
             }
-            console.log(minhcost);
             return minhcost;
         };
         var goalFunction = function goalf(node) {
@@ -307,7 +308,7 @@ var Planner;
             }
             return result;
         };
-        var result = aStarSearch(stateGraph, new WorldStateNode(state), goalFunction, heuristics, 1);
+        var result = aStarSearch(stateGraph, new WorldStateNode(state), goalFunction, heuristics, 10);
         var plan = new Array();
         for (var i = 0; i < result.path.length - 1; i++) {
             var current = result.path[i].state;
