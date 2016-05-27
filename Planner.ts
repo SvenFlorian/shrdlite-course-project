@@ -214,9 +214,17 @@ module Planner {
         case "inside" :
           return onTopCost(ws,lit);
         case "above" :
-          break
+          var obj1 : string = lit.args[0];
+          var obj2 : string = lit.args[1];
+          var pos1 : number = posOf(obj1,ws);
+          var pos2 : number = posOf(obj2,ws);
+          return Math.max(moveCost(pos1,ws),moveCost(pos2,ws))+pickupCost(obj1,ws,pos1)+1; //+1 is dropcost
         case "under" :
-          break
+          var obj2 : string = lit.args[0];
+          var obj1 : string = lit.args[1];
+          var pos1 : number = posOf(obj1,ws);
+          var pos2 : number = posOf(obj2,ws);
+          return Math.max(moveCost(pos1,ws),moveCost(pos2,ws))+pickupCost(obj1,ws,pos1)+1; //+1 is dropcost
         case "beside" :
           var obj : string = lit.args[0];
           var locPos : number = posOf(lit.args[1], ws);
@@ -256,7 +264,7 @@ module Planner {
             bestIndex = i;
           }
         }
-        return pickupCost(obj,ws,pos1) + clearStackCost(bestIndex,ws)+1;
+        return pickupCost(obj,ws,pos1) + clearStackCost(bestIndex,ws)+1; //+1 is the dropcost
       }
       return pickupCost(obj,ws,pos1)+dropCost(loc,ws,pos2)+Math.max(moveCost(pos1,ws),moveCost(pos2,ws));
     }

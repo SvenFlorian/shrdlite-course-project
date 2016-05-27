@@ -180,9 +180,17 @@ var Planner;
             case "inside":
                 return onTopCost(ws, lit);
             case "above":
-                break;
+                var obj1 = lit.args[0];
+                var obj2 = lit.args[1];
+                var pos1 = posOf(obj1, ws);
+                var pos2 = posOf(obj2, ws);
+                return Math.max(moveCost(pos1, ws), moveCost(pos2, ws)) + pickupCost(obj1, ws, pos1) + 1;
             case "under":
-                break;
+                var obj2 = lit.args[0];
+                var obj1 = lit.args[1];
+                var pos1 = posOf(obj1, ws);
+                var pos2 = posOf(obj2, ws);
+                return Math.max(moveCost(pos1, ws), moveCost(pos2, ws)) + pickupCost(obj1, ws, pos1) + 1;
             case "beside":
                 var obj = lit.args[0];
                 var locPos = posOf(lit.args[1], ws);
