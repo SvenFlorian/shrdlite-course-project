@@ -158,11 +158,11 @@ var Planner;
         if ((obj2 == null) || (obj == null)) {
             return result;
         }
-        if (!(obj.form == "ball" && obj2.form != "box") ||
-            (!((obj.form == "box" && obj.size == "small") && (obj2.size == "small" && (obj2.form == "brick" || obj2.form == "pyramid")))) ||
-            (!((obj.size == "large" && obj.form == "box") && (obj2.form == "pyramid"))) ||
-            (!(obj2.size == "small" && obj.size == "large")) ||
-            (!(obj2.form == "ball")) || (w1.stacks[w1.arm].length < 5)) {
+        if (!(obj.form == "ball" && obj2.form != "box") &&
+            (!((obj.form == "box" && obj.size == "small") && (obj2.size == "small" && (obj2.form == "brick" || obj2.form == "pyramid")))) &&
+            (!((obj.size == "large" && obj.form == "box") && (obj2.form == "pyramid"))) &&
+            (!(obj2.size == "small" && obj.size == "large")) &&
+            (!(obj2.form == "ball")) && (w1.stacks[w1.arm].length < 5)) {
             result.push("d");
         }
         return result;
@@ -171,7 +171,7 @@ var Planner;
         var cost = 0;
         if (lit.relation == "holding") {
             var desiredObject = lit.args[0];
-            if (ws.holding = desiredObject) {
+            if (ws.holding == desiredObject) {
                 return 0;
             }
             cost += Math.abs(ws.arm - posOf(desiredObject, ws));
@@ -188,7 +188,22 @@ var Planner;
         }
         return -1;
     }
+    function planInterpretation2(interpretation, state) {
+        var testNode = new WorldStateNode(state);
+        var stateGraph = new StateGraph();
+        var edges = stateGraph.outgoingEdges(testNode);
+        var testNode2 = edges[0].to;
+        var edges = stateGraph.outgoingEdges(testNode2);
+        var testNode3 = edges[0].to;
+        console.log(" " + testNode.toString() + " - actions: " + getPossibleActions(testNode.state));
+        console.log(" " + testNode2.toString() + " - actions: " + getPossibleActions(testNode2.state));
+        console.log(" " + edges[0].to.toString() + " - actions: " + getPossibleActions(edges[0].to.state));
+        console.log(" " + edges[1].to.toString() + " - actions: " + getPossibleActions(edges[1].to.state));
+        console.log(" " + edges[2].to.toString() + " - actions: " + getPossibleActions(edges[2].to.state));
+        return null;
+    }
     function planInterpretation(interpretation, state) {
+        state.holding = undefined;
         var stateGraph = new StateGraph();
         var heuristics = function heuristics(node) {
             var minhcost = Infinity;

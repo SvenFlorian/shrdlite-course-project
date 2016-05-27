@@ -192,11 +192,11 @@ module Planner {
       {
         return result;
       }
-      if(!(obj.form == "ball" && obj2.form != "box") ||
-      (!((obj.form == "box" && obj.size == "small") && (obj2.size == "small" && (obj2.form == "brick" || obj2.form == "pyramid"))))||
-      (!((obj.size == "large" && obj.form == "box") && (obj2.form == "pyramid"))) ||
-      (!(obj2.size == "small" && obj.size == "large")) ||
-      (!(obj2.form == "ball")) || (w1.stacks[w1.arm].length < 5)) {
+      if(!(obj.form == "ball" && obj2.form != "box") &&
+      (!((obj.form == "box" && obj.size == "small") && (obj2.size == "small" && (obj2.form == "brick" || obj2.form == "pyramid")))) &&
+      (!((obj.size == "large" && obj.form == "box") && (obj2.form == "pyramid"))) &&
+      (!(obj2.size == "small" && obj.size == "large")) &&
+      (!(obj2.form == "ball")) && (w1.stacks[w1.arm].length < 5)) {
         result.push("d");
       }
       return result;
@@ -205,7 +205,7 @@ module Planner {
       var cost : number = 0;
       if(lit.relation == "holding"){
         var desiredObject : string = lit.args[0];
-        if(ws.holding = desiredObject) {
+        if(ws.holding == desiredObject) {
           return 0;
         }
         cost+= Math.abs(ws.arm-posOf(desiredObject,ws));
@@ -243,7 +243,25 @@ module Planner {
      * "d". The code shows how to build a plan. Each step of the plan can
      * be added using the `push` method.
      */
+    function planInterpretation2(interpretation : Interpreter.DNFFormula, state : WorldState) : string[] {
+      var testNode : WorldStateNode = new WorldStateNode(state);
+      var stateGraph : StateGraph = new StateGraph();
+      var edges : Array<Edge<WorldStateNode>> = stateGraph.outgoingEdges(testNode);
+      var testNode2 : WorldStateNode = edges[0].to;
+      var edges : Array<Edge<WorldStateNode>> = stateGraph.outgoingEdges(testNode2);
+      var testNode3 : WorldStateNode = edges[0].to;
+
+      console.log(" " + testNode.toString() + " - actions: " + getPossibleActions(testNode.state));
+      console.log(" " + testNode2.toString() + " - actions: " + getPossibleActions(testNode2.state));
+
+      console.log(" " + edges[0].to.toString() + " - actions: " + getPossibleActions(edges[0].to.state));
+      console.log(" " + edges[1].to.toString() + " - actions: " + getPossibleActions(edges[1].to.state));
+      console.log(" " + edges[2].to.toString() + " - actions: " + getPossibleActions(edges[2].to.state));
+
+      return null;
+    }
     function planInterpretation(interpretation : Interpreter.DNFFormula, state : WorldState) : string[] {
+      state.holding = undefined;
       //var testNode : WorldStateNode = new WorldStateNode(state);
       var stateGraph : StateGraph = new StateGraph();
 
