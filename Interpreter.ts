@@ -198,7 +198,7 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
         case "inside":
           if (obj2.form != "box" || obj1.form == "floor") {
             return false;
-          }else if ((obj1.size == obj2.size && (obj1.form != "ball" && obj1.form != "brick"))||
+          }else if ((obj1.size == obj2.size && (obj1.form != "ball" && obj1.form != "brick" && obj1.form != "table"))||
                     (obj1.size == "large" && obj2.size == "small")) {
             return false;
           }
