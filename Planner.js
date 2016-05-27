@@ -218,10 +218,10 @@ var Planner;
                 var l = interpretation[i][0];
                 var subResult;
                 if (l.relation == "holding") {
-                    subResult = node.state.holding == l.args[0];
+                    subResult = world.holding == l.args[0];
                 }
                 else {
-                    Interpreter.matchesRelation(l.args[0], l.args[1], l.relation, world);
+                    subResult = Interpreter.matchesRelation(l.args[0], l.args[1], l.relation, world);
                 }
                 if (!l.polarity) {
                     subResult = !subResult;
@@ -230,7 +230,7 @@ var Planner;
             }
             return result;
         };
-        var result = aStarSearch(stateGraph, new WorldStateNode(state), goalFunction, heuristics, 100);
+        var result = aStarSearch(stateGraph, new WorldStateNode(state), goalFunction, heuristics, 1);
         var plan = new Array();
         for (var i = 0; i < result.path.length - 1; i++) {
             var current = result.path[i].state;

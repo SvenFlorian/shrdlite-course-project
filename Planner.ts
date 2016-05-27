@@ -273,15 +273,16 @@ module Planner {
         return 0;//return minhcost;
       }
       var goalFunction = function goalf(node : WorldStateNode) : boolean {
+
         var world : WorldState = node.state;
         var result : boolean = false;
         for(var i : number = 0; i < interpretation.length; i++) {
             var l : Interpreter.Literal = interpretation[i][0]; //assuming just 1 literal per potential goal
             var subResult : boolean;
-            if(l.relation == "holding") { //the only single paramter relation
-              subResult = node.state.holding == l.args[0];
+            if(l.relation == "holding") { //the only single parameter relation
+              subResult = world.holding == l.args[0];
             }else{
-              Interpreter.matchesRelation(l.args[0] ,l.args[1], l.relation, world);
+              subResult = Interpreter.matchesRelation(l.args[0] ,l.args[1], l.relation, world);
             }
             if(!l.polarity) {
                 subResult = !subResult;
@@ -290,7 +291,7 @@ module Planner {
         }
         return result;
       }
-      var result : SearchResult<WorldStateNode> = aStarSearch(stateGraph,new WorldStateNode(state),goalFunction,heuristics,100);
+      var result : SearchResult<WorldStateNode> = aStarSearch(stateGraph,new WorldStateNode(state),goalFunction,heuristics,1);
       var plan : string[] = new Array<string>();
 
       for(var i : number = 0; i < result.path.length-1; i++) {
