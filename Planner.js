@@ -167,26 +167,79 @@ var Planner;
         }
         return result;
     }
-    function huer(ws, lit) {
+    function heur(ws, lit) {
         var cost = 0;
-        if (lit.relation == "holding") {
-            var desiredObject = lit.args[0];
-            if (ws.holding == desiredObject) {
-                return 0;
-            }
-            cost += Math.abs(ws.arm - posOf(desiredObject, ws));
+        switch (lit.relation) {
+            case "holding":
+                ;
+                cost = pickupCost(lit.args[0], ws);
+                break;
+            case "ontop":
+                var obj = lit.args[0];
+                var objPos = posOf(obj, ws);
+                var loc = lit.args[1];
+                var locPos = posOf(loc, ws);
+                if (loc == "floor") {
+                }
+                cost += pickupCost(obj, ws);
+                cost += dropCost(loc, ws);
+                break;
+            case "inside":
+                break;
+            case "above":
+                break;
+            case "under":
+                break;
+            case "beside":
+                break;
+            case "leftof":
+                break;
+            case "rightof":
+                break;
         }
         return cost;
     }
+    function dropCost(desiredObject, ws) {
+        return 0;
+    }
+    function pickupCost(desiredObject, ws) {
+        var cost = 0;
+        if (ws.holding == desiredObject) {
+            return 0;
+        }
+        var pos = posOf(desiredObject, ws);
+        cost += Math.abs(ws.arm - pos);
+        cost += nrOfItemsOnTopOf(desiredObject, ws, pos) * 4;
+        if (ws.holding != undefined) {
+            cost += 3;
+        }
+        return cost;
+    }
+    function nrOfItemsOnTopOf(s, ws, pos) {
+        if (ws.holding == s) {
+            return 0;
+        }
+        var result = 0;
+        for (var i = 0; i < ws.stacks[pos].length; i++) {
+            if (ws.stacks[pos][i] == s) {
+                break;
+            }
+            result++;
+        }
+        return result;
+    }
     function posOf(s, ws) {
         var result = -1;
+        if (s == "floor") {
+            return Infinity;
+        }
         for (var i = 0; i < ws.stacks.length; i++) {
             result = ws.stacks[i].indexOf(s);
             if (result != -1) {
                 return result;
             }
         }
-        return -1;
+        return result;
     }
     function planInterpretation2(interpretation, state) {
         var testNode = new WorldStateNode(state);
@@ -207,9 +260,10 @@ var Planner;
         var heuristics = function heuristics(node) {
             var minhcost = Infinity;
             for (var i = 0; i < interpretation.length; i++) {
-                minhcost = Math.min(minhcost, huer(node.state, interpretation[i][0]));
+                minhcost = Math.min(minhcost, heur(node.state, interpretation[i][0]));
             }
-            return 0;
+            console.log(minhcost);
+            return minhcost;
         };
         var goalFunction = function goalf(node) {
             var world = node.state;

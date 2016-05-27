@@ -109,7 +109,7 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
         interpretation = [
             ];
         if(cmd.command == "take") {
-          if(cmd.entity == null)
+          if(cmd.entity == null && state.holding == null)
           {
             throw new Error("Cannot take 'it', be more specific!");
           }
@@ -125,7 +125,7 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
           }
 
         }else if (cmd.command == "move" || cmd.command == "put") {
-          if(cmd.entity == null)
+          if(cmd.entity == null && state.holding == null)
           {
             throw new Error("Holding nothing! Cannot move/put 'it'");
           }

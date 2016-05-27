@@ -201,26 +201,79 @@ module Planner {
       }
       return result;
     }
-    function huer(ws : WorldState, lit : Interpreter.Literal) : number {
+    function heur(ws : WorldState, lit : Interpreter.Literal) : number {
       var cost : number = 0;
-      if(lit.relation == "holding"){
-        var desiredObject : string = lit.args[0];
-        if(ws.holding == desiredObject) {
-          return 0;
-        }
-        cost+= Math.abs(ws.arm-posOf(desiredObject,ws));
+      switch(lit.relation){
+        case "holding" :;
+          cost = pickupCost(lit.args[0],ws);
+          break;
+        case "ontop" :
+          var obj : string = lit.args[0];
+          var objPos : number = posOf(obj,ws);
+          var loc : string = lit.args[1];
+          var locPos : number = posOf(loc,ws);
+          if(loc == "floor") {
+
+          }
+          cost+=pickupCost(obj,ws);
+          cost+=dropCost(loc,ws);
+          break
+        case "inside" :
+          break
+        case "above" :
+          break
+        case "under" :
+          break
+        case "beside" :
+          break
+        case "leftof" :
+          break
+        case "rightof" :
+          break
       }
       return cost;
     }
+    function dropCost(desiredObject : string, ws : WorldState) : number {
+      return 0;
+    }
+    function pickupCost(desiredObject : string, ws : WorldState) : number {
+      var cost : number = 0;
+      if(ws.holding == desiredObject) {
+        return 0;
+      }
+      var pos : number = posOf(desiredObject,ws);
+      cost+= Math.abs(ws.arm-pos);
+      cost+= nrOfItemsOnTopOf(desiredObject, ws, pos)*4;
+      if (ws.holding != undefined) {
+          cost+=3;
+      }
+      return cost;
+    }
+    function nrOfItemsOnTopOf(s : string, ws : WorldState, pos : number) : number {
+      if(ws.holding == s) {
+        return 0;
+      }
+      var result: number = 0;
+      for(var i : number = 0; i < ws.stacks[pos].length; i++) {
+          if(ws.stacks[pos][i] == s) {
+            break;
+          }
+          result++;
+      }
+      return result;
+    }
     function posOf(s : string, ws : WorldState) : number {
       var result : number = -1; //returns -1 if it is being held or it doesnt exist
+      if(s == "floor") { //returns the floor closest to the arm
+          return Infinity;
+      }
       for(var i : number = 0; i < ws.stacks.length; i++) {
           result = ws.stacks[i].indexOf(s);
           if (result != -1){
             return result;
           }
       }
-      return -1;
+      return result;
     }
     //////////////////////////////////////////////////////////////////////
     // private functions
@@ -268,9 +321,10 @@ module Planner {
       var heuristics = function heuristics(node : WorldStateNode) : number {
         var minhcost : number = Infinity;
         for(var i : number = 0; i < interpretation.length; i++) {
-          minhcost = Math.min(minhcost,huer(node.state,interpretation[i][0]));
+          minhcost = Math.min(minhcost,heur(node.state,interpretation[i][0]));
         }
-        return 0;//return minhcost;
+        console.log(minhcost);
+        return minhcost;//return minhcost;
       }
       var goalFunction = function goalf(node : WorldStateNode) : boolean {
 

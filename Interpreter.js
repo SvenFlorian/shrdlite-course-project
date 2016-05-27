@@ -38,7 +38,7 @@ var Interpreter;
         var interpretation;
         interpretation = [];
         if (cmd.command == "take") {
-            if (cmd.entity == null) {
+            if (cmd.entity == null && state.holding == null) {
                 throw new Error("Cannot take 'it', be more specific!");
             }
             else {
@@ -53,7 +53,7 @@ var Interpreter;
             }
         }
         else if (cmd.command == "move" || cmd.command == "put") {
-            if (cmd.entity == null) {
+            if (cmd.entity == null && state.holding == null) {
                 throw new Error("Holding nothing! Cannot move/put 'it'");
             }
             else {
