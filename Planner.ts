@@ -204,22 +204,15 @@ module Planner {
     function heur(ws : WorldState, lit : Interpreter.Literal) : number {
       var cost : number = 0;
       switch(lit.relation){
-        case "holding" :;
-          cost = pickupCost(lit.args[0],ws);
-          break;
+        case "holding" :
+          var pos : number = posOf(lit.args[0],ws);
+          cost += pickupCost(lit.args[0],ws,pos);
+          cost += moveCost(pos,ws);
+          return cost;
         case "ontop" :
-          var obj : string = lit.args[0];
-          var objPos : number = posOf(obj,ws);
-          var loc : string = lit.args[1];
-          var locPos : number = posOf(loc,ws);
-          if(loc == "floor") {
-
-          }
-          cost+=pickupCost(obj,ws);
-          cost+=dropCost(loc,ws);
-          break
+          return onTopCost(ws,lit);
         case "inside" :
-          break
+          return onTopCost(ws,lit);
         case "above" :
           break
         case "under" :
@@ -233,19 +226,49 @@ module Planner {
       }
       return cost;
     }
-    function dropCost(desiredObject : string, ws : WorldState) : number {
-      return 0;
+    function onTopCost(ws : WorldState, lit : Interpreter.Literal) : number {
+      var obj : string = lit.args[0];
+      var loc : string = lit.args[1];
+      var pos1 : number = posOf(obj,ws);
+      var pos2 : number = posOf(loc,ws);
+      console.log(moveCost(pos1,ws));
+      console.log(moveCost(pos2,ws));
+      console.log(pickupCost(obj,ws,pos1));
+      return pickupCost(obj,ws,pos1)+dropCost(loc,ws,pos2)+Math.max(moveCost(pos1,ws),moveCost(pos2,ws));
     }
-    function pickupCost(desiredObject : string, ws : WorldState) : number {
+    function moveCost(pos : number,state : WorldState) : number{
+      if(pos == Infinity || pos == -1) { //if floor or holding
+        return 0;
+      }else{
+        return Math.abs(state.arm-pos);
+      }
+    }
+    function dropCost(loc : string, ws : WorldState, pos : number) : number {
+      var cost : number = 0;
+      if(loc == "floor") {
+        var smallestStack : Stack = ws.stacks[0];
+        for(var i : number = 1; i < ws.stacks.length; i++) {
+          if (ws.stacks[i].length < smallestStack.length) {
+            smallestStack = ws.stacks[i];
+          }
+        }
+        return smallestStack.length*4;
+      }
+      if(ws.holding == loc){ //then pos = -1
+        return 1;
+      }
+      cost+= nrOfItemsOnTopOf(loc,ws,pos)+Math.abs(ws.arm-pos);
+      return cost;
+    }
+    function pickupCost(desiredObject : string, ws : WorldState, pos : number) : number {
       var cost : number = 0;
       if(ws.holding == desiredObject) {
         return 0;
       }
-      var pos : number = posOf(desiredObject,ws);
       cost+= Math.abs(ws.arm-pos);
       cost+= nrOfItemsOnTopOf(desiredObject, ws, pos)*4;
       if (ws.holding != undefined) {
-          cost+=3;
+          cost+=2;
       }
       return cost;
     }
@@ -298,18 +321,16 @@ module Planner {
      */
     function planInterpretation2(interpretation : Interpreter.DNFFormula, state : WorldState) : string[] {
       var testNode : WorldStateNode = new WorldStateNode(state);
-      var stateGraph : StateGraph = new StateGraph();
-      var edges : Array<Edge<WorldStateNode>> = stateGraph.outgoingEdges(testNode);
-      var testNode2 : WorldStateNode = edges[0].to;
-      var edges : Array<Edge<WorldStateNode>> = stateGraph.outgoingEdges(testNode2);
-      var testNode3 : WorldStateNode = edges[0].to;
+      var heuristics = function heuristicsf(node : WorldStateNode) : number {
+        var minhcost : number = Infinity;
+        for(var i : number = 0; i < interpretation.length; i++) {
+          minhcost = Math.min(minhcost,heur(node.state,interpretation[i][0]));
+        }
+        console.log(minhcost);
+        return minhcost;//return minhcost;
+      }
+      console.log(" " + testNode.toString() + " - cost: " + heuristics(testNode));
 
-      console.log(" " + testNode.toString() + " - actions: " + getPossibleActions(testNode.state));
-      console.log(" " + testNode2.toString() + " - actions: " + getPossibleActions(testNode2.state));
-
-      console.log(" " + edges[0].to.toString() + " - actions: " + getPossibleActions(edges[0].to.state));
-      console.log(" " + edges[1].to.toString() + " - actions: " + getPossibleActions(edges[1].to.state));
-      console.log(" " + edges[2].to.toString() + " - actions: " + getPossibleActions(edges[2].to.state));
 
       return null;
     }
@@ -318,7 +339,7 @@ module Planner {
       var stateGraph : StateGraph = new StateGraph();
 
       //TODO heuristics function
-      var heuristics = function heuristics(node : WorldStateNode) : number {
+      var heuristics = function heuristicsf(node : WorldStateNode) : number {
         var minhcost : number = Infinity;
         for(var i : number = 0; i < interpretation.length; i++) {
           minhcost = Math.min(minhcost,heur(node.state,interpretation[i][0]));
