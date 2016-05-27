@@ -14,3 +14,12 @@ function pruneList : returns the intersection of given set and the set of object
 Essentially, the base of every command is to take an object and put it to a location. Which exact objects is meant can be narrowed down by elaborating on its relation to some other object in the world. Similarly, this can also be done to narrow down the potential locations to which the object should be moved to. 
 
 In our program we start by traversing through the tree and finding all the possible objects that match this description, as well as finding all the possible locations. We then combine these to create a list of goal states, while also eliminating all infeasible goals in the process. 
+
+
+Some of the changes made after hand in was rejected:
+
+	- Expanded isFeasible to cover other worlds than small and covered some more more cases such as something being placed under the floor etc.
+
+	- Fixed our misunderstanding of how the grammar works according to feedback recieved from the rejected hand in.  
+
+	- Improved our Prunelist function as suggested by supervisor
