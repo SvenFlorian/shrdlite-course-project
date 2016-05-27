@@ -38,26 +38,36 @@ var Interpreter;
         var interpretation;
         interpretation = [];
         if (cmd.command == "take") {
-            var potentialObjs = getMatchingObjects(cmd.entity.object, mObject, mString, state).toArray();
-            for (var i = 0; i < potentialObjs.length; i++) {
-                var obj = potentialObjs[i];
-                var lit = { polarity: true, relation: "holding", args: [obj] };
-                if (isFeasible(lit, state)) {
-                    interpretation.push([lit]);
+            if (cmd.entity == null) {
+                throw new Error("Cannot take 'it', be more specific!");
+            }
+            else {
+                var potentialObjs = getMatchingObjects(cmd.entity.object, mObject, mString, state).toArray();
+                for (var i = 0; i < potentialObjs.length; i++) {
+                    var obj = potentialObjs[i];
+                    var lit = { polarity: true, relation: "holding", args: [obj] };
+                    if (isFeasible(lit, state)) {
+                        interpretation.push([lit]);
+                    }
                 }
             }
         }
         else if (cmd.command == "move" || cmd.command == "put") {
-            var potentialObjs = (cmd.entity == undefined) ? [state.holding] :
-                getMatchingObjects(cmd.entity.object, mObject, mString, state).toArray();
-            var potentialLocs = getMatchingObjects(cmd.location.entity.object, mObject, mString, state).toArray();
-            for (var i = 0; i < potentialObjs.length; i++) {
-                var obj = potentialObjs[i];
-                for (var j = 0; j < potentialLocs.length; j++) {
-                    var loc = potentialLocs[j];
-                    var lit = { polarity: true, relation: cmd.location.relation, args: [obj, loc] };
-                    if (isFeasible(lit, state)) {
-                        interpretation.push([lit]);
+            if (cmd.entity == null) {
+                throw new Error("Holding nothing! Cannot move/put 'it'");
+            }
+            else {
+                var potentialObjs = (cmd.entity == undefined) ? [state.holding] :
+                    getMatchingObjects(cmd.entity.object, mObject, mString, state).toArray();
+                var potentialLocs = getMatchingObjects(cmd.location.entity.object, mObject, mString, state).toArray();
+                for (var i = 0; i < potentialObjs.length; i++) {
+                    var obj = potentialObjs[i];
+                    for (var j = 0; j < potentialLocs.length; j++) {
+                        var loc = potentialLocs[j];
+                        var lit = { polarity: true, relation: cmd.location.relation, args: [obj, loc] };
+                        if (isFeasible(lit, state)) {
+                            interpretation.push([lit]);
+                        }
                     }
                 }
             }

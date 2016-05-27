@@ -109,26 +109,38 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
         interpretation = [
             ];
         if(cmd.command == "take") {
-          var potentialObjs : Array<string> = getMatchingObjects(cmd.entity.object, mObject, mString, state).toArray();
-          for(var i = 0; i < potentialObjs.length; i++) {
-            var obj : string = potentialObjs[i];
-            var lit : Literal = {polarity: true, relation: "holding", args: [obj]};
-            if(isFeasible(lit, state)) {
-              interpretation.push([lit]);
+          if(cmd.entity == null)
+          {
+            throw new Error("Cannot take 'it', be more specific!");
+          }
+          else{
+            var potentialObjs : Array<string> = getMatchingObjects(cmd.entity.object, mObject, mString, state).toArray();
+            for(var i = 0; i < potentialObjs.length; i++) {
+              var obj : string = potentialObjs[i];
+              var lit : Literal = {polarity: true, relation: "holding", args: [obj]};
+              if(isFeasible(lit, state)) {
+                interpretation.push([lit]);
+              }
             }
           }
 
         }else if (cmd.command == "move" || cmd.command == "put") {
-          var potentialObjs : Array<string> = (cmd.entity == undefined) ? [state.holding] :
-              getMatchingObjects(cmd.entity.object, mObject, mString, state).toArray();
-          var potentialLocs : Array<string> = getMatchingObjects(cmd.location.entity.object, mObject, mString, state).toArray();
-          for(var i = 0; i < potentialObjs.length; i++) {
-            var obj : string = potentialObjs[i];
-            for(var j = 0; j < potentialLocs.length; j++) {
-              var loc : string = potentialLocs[j];
-              var lit : Literal = {polarity: true, relation: cmd.location.relation, args: [obj,loc]};
-              if(isFeasible(lit, state)) {
-                interpretation.push([lit]);
+          if(cmd.entity == null)
+          {
+            throw new Error("Holding nothing! Cannot move/put 'it'");
+          }
+          else{
+            var potentialObjs : Array<string> = (cmd.entity == undefined) ? [state.holding] :
+                getMatchingObjects(cmd.entity.object, mObject, mString, state).toArray();
+            var potentialLocs : Array<string> = getMatchingObjects(cmd.location.entity.object, mObject, mString, state).toArray();
+            for(var i = 0; i < potentialObjs.length; i++) {
+              var obj : string = potentialObjs[i];
+              for(var j = 0; j < potentialLocs.length; j++) {
+                var loc : string = potentialLocs[j];
+                var lit : Literal = {polarity: true, relation: cmd.location.relation, args: [obj,loc]};
+                if(isFeasible(lit, state)) {
+                  interpretation.push([lit]);
+                }
               }
             }
           }

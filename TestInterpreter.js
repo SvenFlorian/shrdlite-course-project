@@ -2654,16 +2654,21 @@ var Interpreter;
             }
         }
         else if (cmd.command == "move" || cmd.command == "put") {
-            var potentialObjs = (cmd.entity == undefined) ? [state.holding] :
-                getMatchingObjects(cmd.entity.object, mObject, mString, state).toArray();
-            var potentialLocs = getMatchingObjects(cmd.location.entity.object, mObject, mString, state).toArray();
-            for (var i = 0; i < potentialObjs.length; i++) {
-                var obj = potentialObjs[i];
-                for (var j = 0; j < potentialLocs.length; j++) {
-                    var loc = potentialLocs[j];
-                    var lit = { polarity: true, relation: cmd.location.relation, args: [obj, loc] };
-                    if (isFeasible(lit, state)) {
-                        interpretation.push([lit]);
+            if (cmd.entity == null) {
+                throw new Error("Holding nothing! Cannot put 'it'");
+            }
+            else {
+                var potentialObjs = (cmd.entity == undefined) ? [state.holding] :
+                    getMatchingObjects(cmd.entity.object, mObject, mString, state).toArray();
+                var potentialLocs = getMatchingObjects(cmd.location.entity.object, mObject, mString, state).toArray();
+                for (var i = 0; i < potentialObjs.length; i++) {
+                    var obj = potentialObjs[i];
+                    for (var j = 0; j < potentialLocs.length; j++) {
+                        var loc = potentialLocs[j];
+                        var lit = { polarity: true, relation: cmd.location.relation, args: [obj, loc] };
+                        if (isFeasible(lit, state)) {
+                            interpretation.push([lit]);
+                        }
                     }
                 }
             }
@@ -2723,7 +2728,8 @@ var Interpreter;
                 if (obj2.form != "box" || obj1.form == "floor") {
                     return false;
                 }
-                else if ((obj1.size == obj2.size && (obj1.form != "ball" || obj1.form == "pyramid" || obj1.form == "plank")) || (obj1.size == "large" && obj2.size == "small")) {
+                else if ((obj1.size == obj2.size && (obj1.form != "ball" && obj1.form != "brick")) ||
+                    (obj1.size == "large" && obj2.size == "small")) {
                     return false;
                 }
                 break;
@@ -2749,7 +2755,7 @@ var Interpreter;
                 if (obj1.size == "large" && obj2.size == "small") {
                     return false;
                 }
-                if (lit.args[0] == "floor") {
+                if (obj1.form == "floor") {
                     return false;
                 }
                 break;
@@ -2760,7 +2766,7 @@ var Interpreter;
                 if (obj1.size == "small" && obj2.size == "large") {
                     return false;
                 }
-                if (lit.args[1] == "floor") {
+                if (obj2.form == "floor") {
                     return false;
                 }
                 break;
@@ -2840,120 +2846,8 @@ var Interpreter;
             }
         }
         return matchingObjects;
-        //loop through every object in the stack and find the objects that fulfill the relation
-        /*switch (relation) {
-          case "ontop":
-            for (var k = 0; k < relative.length; k++) {
-              if (relative[k] == "floor") {
-                for (var l = 0; l < state.stacks.length; l++) {
-                  if (state.stacks[l].length > 0) {
-                    matchingObjects.add(state.stacks[l][0]);
-                  }
-                }
-                break;
-              }
-              if (state.objects[relative[k]].form == "box") { continue; }
-              for (var i = 0; i < state.stacks.length; i++) {
-                for (var j = 0; j < state.stacks[i].length - 1; j++) {
-                  if (state.stacks[i][j] == relative[k]) {
-                    matchingObjects.add(state.stacks[i][j+1]);
-                  }
-                }
-              }
-            }
-          break;
-          case "inside":
-            for (var k = 0; k < relative.length; k++) {
-              if (state.objects[relative[k]].form != "box") { continue; }
-              for (var i = 0; i < state.stacks.length; i++) {
-                for (var j = 0; j < state.stacks[i].length - 1; j++) {
-                  if (state.stacks[i][j] == relative[k]) {
-                    matchingObjects.add(state.stacks[i][j+1]);
-                  }
-                }
-              }
-            }
-          break;
-          case "above":
-            for (var k = 0; k < relative.length; k++) {
-              if (relative[k] == "floor") {
-                var orig : Array<string> = original.toArray();
-                for (var l = 0; l < orig.length; l++) {
-                  matchingObjects.add(orig[l]);
-                }
-                break;
-              }
-              for (var i = 0; i < state.stacks.length; i++) {
-                for (var j = 0; j < state.stacks[i].length - 1; j++) {
-                  if (state.stacks[i][j] == relative[k]) {
-                    for (; j < state.stacks[i].length - 1; j++) {
-                      matchingObjects.add(state.stacks[i][j+1]);
-                    }
-                    break;
-                  }
-                }
-              }
-            }
-          break;
-          case "under":
-            for (var k = 0; k < relative.length; k++) {
-              for (var i = 0; i < state.stacks.length; i++) {
-                for (var j = 1; j < state.stacks[i].length; j++) {
-                  if (state.stacks[i][j] == relative[k]) {
-                    for (var m = 0; m < j; m++) {
-                      matchingObjects.add(state.stacks[i][m]);
-                    }
-                    break;
-                  }
-                }
-              }
-            }
-          break;
-          case "leftof":
-            var foundSomething : number = state.stacks.length;
-            for (var i = state.stacks.length - 1; i >= 0; i--) {
-              for (var j = 0; j < state.stacks[i].length; j++) {
-                for (var k = 0; k < relative.length; k++) {
-                  if (state.stacks[i][j] == relative[k]) { foundSomething = i; }
-                  if (foundSomething > i) { matchingObjects.add(state.stacks[i][j]); }
-                }
-              }
-            }
-          break;
-          case "rightof":
-            var foundSomething : number = state.stacks.length;
-            for (var i = 0; i < state.stacks.length - 1; i++) {
-              for (var j = 0; j < state.stacks[i].length; j++) {
-                for (var k = 0; k < relative.length; k++) {
-                  if (state.stacks[i][j] == relative[k]) { foundSomething = i; }
-                  if (foundSomething < i) { matchingObjects.add(state.stacks[i][j]); }
-                }
-              }
-            }
-          break;
-          case "beside":
-            for (var k = 0; k < relative.length; k++) {
-              for (var i = 0; i < state.stacks.length; i++) {
-                for (var j = 0; j < state.stacks[i].length; j++) {
-                  if (state.stacks[i][j] == relative[k]) {
-                    for (var m = 0; i > 0 && m < state.stacks[i-1].length; m++) {
-                      matchingObjects.add(state.stacks[i-1][m]);
-                    }
-                    for (var n = 0; i < state.stacks.length - 1 && n < state.stacks[i+1].length; n++) {
-                      matchingObjects.add(state.stacks[i+1][n]);
-                    }
-                    break;
-                  }
-                }
-              }
-            }
-          break;
-          default: break;
-        }
-          original.intersection(matchingObjects);
-          return original;*/
     }
-    //function matchesRelation(original : collections.Set<string>, relative : collections.Set<string>, relation : string, state : WorldState) : boolean {
+    //@returns true if relation(original,relative) is true in state
     function matchesRelation(original, relative, relation, state) {
         var row1;
         var row2;
@@ -3013,6 +2907,7 @@ var Interpreter;
         return false;
         var _a, _b;
     }
+    Interpreter.matchesRelation = matchesRelation;
     function findObjectInWorld(object, state) {
         for (var i = 0; i < state.stacks.length; i++) {
             for (var j = 0; j < state.stacks[i].length; j++) {
@@ -3024,8 +2919,127 @@ var Interpreter;
         return [-1, -1];
     }
 })(Interpreter || (Interpreter = {}));
+///<reference path="lib/collections.ts"/>
+///<reference path="lib/node.d.ts"/>
+/** Graph module
+*
+*  Types for generic A\* implementation.
+*
+*  *NB.* The only part of this module
+*  that you should change is the `aStarSearch` function. Everything
+*  else should be used as-is.
+*/
+/** An edge in a graph. */
+var Edge = (function () {
+    function Edge() {
+    }
+    return Edge;
+}());
+/** Type that reports the result of a search. */
+var SearchResult = (function () {
+    function SearchResult() {
+    }
+    return SearchResult;
+}());
+/**
+* A\* search implementation, parameterised by a `Node` type. The code
+* here is just a template; you should rewrite this function
+* entirely. In this template, the code produces a dummy search result
+* which just picks the first possible neighbour.
+*
+* Note that you should not change the API (type) of this function,
+* only its body.
+* @param graph The graph on which to perform A\* search.
+* @param start The initial node.
+* @param goal A function that returns true when given a goal node. Used to determine if the algorithm has reached the goal.
+* @param heuristics The heuristic function. Used to estimate the cost of reaching the goal from a given Node.
+* @param timeout Maximum time (in seconds) to spend performing A\* search.
+* @returns A search result, which contains the path from `start` to a node satisfying `goal` and the cost of this path.
+*/
+function aStarSearch(graph, start, goal, heuristics, timeout) {
+    function nodeToString(key) {
+        return key.toString();
+    }
+    var MapCost = new collections.Dictionary(nodeToString);
+    var VisitedParent = new collections.Dictionary(nodeToString);
+    var time = 0;
+    function totalCost(node) {
+        var n = MapCost.getValue(node);
+        if (n == undefined) {
+            n = Infinity;
+        }
+        return n;
+    }
+    function compareCosts(n1, n2) {
+        var c1 = totalCost(n1) + heuristics(n1);
+        var c2 = totalCost(n2) + heuristics(n2);
+        if (c1 < c2)
+            return 1;
+        else if (c2 < c1)
+            return -1;
+        else
+            return 0;
+    }
+    var frontier = new collections.PriorityQueue(compareCosts);
+    var visitedNodes = new collections.Set();
+    frontier.enqueue(start);
+    MapCost.setValue(start, 0);
+    var currentNode = start; // hence the startnode is its own parent
+    var startTime = Date.now();
+    timeout = timeout * 1000;
+    while (time < timeout) {
+        time = (Date.now() - startTime);
+        var parentNode = currentNode;
+        currentNode = frontier.dequeue();
+        visitedNodes.add(currentNode);
+        if (goal(currentNode)) {
+            //reconstruct path home
+            var finalCost = totalCost(currentNode);
+            var finalPath = [];
+            while (graph.compareNodes(currentNode, start) != 0) {
+                finalPath.push(currentNode);
+                currentNode = VisitedParent.getValue(currentNode);
+            }
+            finalPath.push(start);
+            finalPath = finalPath.reverse();
+            var result = {
+                path: finalPath,
+                cost: finalCost
+            };
+            return result;
+        }
+        var edges = graph.outgoingEdges(currentNode);
+        //add currentnode's neighbours to frontier and calculate costs
+        for (var i = 0; i < edges.length; i++) {
+            var newNode = edges[i].to;
+            //console.log(newNode.toString() + " :h= " + heuristics(newNode));
+            var arr = visitedNodes.toArray();
+            if (visitedNodes.contains(newNode)) {
+                continue;
+            }
+            var cost = edges[i].cost + totalCost(currentNode);
+            if (!frontier.contains(newNode)) {
+                MapCost.setValue(newNode, cost);
+                frontier.enqueue(newNode);
+                VisitedParent.setValue(newNode, currentNode);
+            }
+            else if (cost >= totalCost(newNode)) {
+                continue; //then this is a slower path to newnode than the already known one
+            }
+            else {
+                MapCost.setValue(newNode, cost);
+                VisitedParent.setValue(newNode, currentNode);
+                continue;
+            }
+        }
+    }
+    console.log("error: timeout!");
+    return null;
+}
 ///<reference path="World.ts"/>
 ///<reference path="Interpreter.ts"/>
+///<reference path="Graph.ts"/>
+///<reference path="World.ts"/>
 /**
 * Planner module
 *
@@ -3075,6 +3089,169 @@ var Planner;
         return result.plan.join(", ");
     }
     Planner.stringify = stringify;
+    function cloneStacks(s) {
+        var newStackList = new Array();
+        for (var i = 0; i < s.length; i++) {
+            var newStack = new Array();
+            for (var j = 0; j < s[i].length; j++) {
+                newStack.push(s[i][j]);
+            }
+            newStackList.push(newStack);
+        }
+        return newStackList;
+    }
+    function moveArm(state, n) {
+        state.arm += n;
+    }
+    function drop(state) {
+        state.stacks[state.arm].push(state.holding);
+        state.holding = undefined;
+    }
+    function pickup(state) {
+        state.holding = state.stacks[state.arm].pop();
+    }
+    var WorldStateNode = (function () {
+        function WorldStateNode(state) {
+            this.identifier = null;
+            this.state = state;
+        }
+        WorldStateNode.prototype.toString = function () {
+            if (this.state == null) {
+                throw new Error("this state is null!");
+            }
+            if (this.identifier != null) {
+                return this.identifier;
+            }
+            var s = "";
+            for (var i = 0; i < this.state.stacks.length; i++) {
+                for (var j = 0; j < this.state.stacks[i].length; j++) {
+                    if (this.state.stacks[i][j] == undefined) {
+                        break;
+                    }
+                    s += this.state.stacks[i][j];
+                }
+                s += "+";
+            }
+            s += this.state.arm;
+            s += this.state.holding;
+            return s;
+        };
+        return WorldStateNode;
+    }());
+    var StateGraph = (function () {
+        function StateGraph() {
+        }
+        /** Computes the edges that leave from a node. */
+        StateGraph.prototype.outgoingEdges = function (node) {
+            var edgeList = new Array();
+            if (node == undefined) {
+                return edgeList;
+            }
+            var actions = getPossibleActions(node.state);
+            for (var i = 0; i < actions.length; i++) {
+                var newState = { arm: node.state.arm, stacks: cloneStacks(node.state.stacks),
+                    holding: node.state.holding, objects: node.state.objects, examples: node.state.examples };
+                switch (actions[i]) {
+                    case "r":
+                        moveArm(newState, 1);
+                        break;
+                    case "l":
+                        moveArm(newState, -1);
+                        break;
+                    case "d":
+                        drop(newState);
+                        break;
+                    case "p":
+                        pickup(newState);
+                        break;
+                }
+                var newEdge = new Edge();
+                newEdge.from = node;
+                newEdge.to = new WorldStateNode(newState);
+                newEdge.cost = 1;
+                edgeList.push(newEdge);
+            }
+            console.log(actions.toString());
+            console.log(node.toString());
+            return edgeList;
+        };
+        /** A function that compares nodes. */
+        StateGraph.prototype.compareNodes = function (n1, n2) {
+            var s1 = n1.state;
+            var s2 = n2.state;
+            if (s1 == null || s2 == null) {
+                return 0;
+            }
+            if (s1.arm != s2.arm || s1.holding != s2.holding) {
+                return 1;
+            }
+            for (var i = 0; i < s1.stacks.length; i++) {
+                for (var j = 0; j < s1.stacks.length; j++) {
+                    if (s1.stacks[i][j] != s2.stacks[i][j]) {
+                        return 1;
+                    }
+                }
+            }
+            return 0;
+        };
+        return StateGraph;
+    }());
+    //returns all possible actions in the current world state, "r" "l" "p" "d"
+    function getPossibleActions(w1) {
+        var result = new Array();
+        if (w1 == null) {
+            return result;
+        }
+        if (w1.arm > 0) {
+            result.push("l");
+        }
+        if (w1.arm < w1.stacks.length - 1) {
+            result.push("r");
+        }
+        if (w1.holding == undefined) {
+            result.push("p");
+            return result;
+        }
+        if (w1.stacks[w1.arm].length == 0) {
+            result.push("d");
+            return result;
+        }
+        var temp = w1.stacks[w1.arm][w1.stacks[w1.arm].length - 1];
+        var obj2 = w1.objects[temp];
+        var obj = w1.objects[w1.holding];
+        if ((obj2 == null) || (obj == null)) {
+            return result;
+        }
+        if (!(obj.form == "ball" && obj2.form != "box") &&
+            (!((obj.form == "box" && obj.size == "small") && (obj2.size == "small" && (obj2.form == "brick" || obj2.form == "pyramid")))) &&
+            (!((obj.size == "large" && obj.form == "box") && (obj2.form == "pyramid"))) &&
+            (!(obj2.size == "small" && obj.size == "large")) &&
+            (!(obj2.form == "ball")) && (w1.stacks[w1.arm].length < 5)) {
+            result.push("d");
+        }
+        return result;
+    }
+    function huer(ws, lit) {
+        var cost = 0;
+        if (lit.relation == "holding") {
+            var desiredObject = lit.args[0];
+            if (ws.holding == desiredObject) {
+                return 0;
+            }
+            cost += Math.abs(ws.arm - posOf(desiredObject, ws));
+        }
+        return cost;
+    }
+    function posOf(s, ws) {
+        var result = -1; //returns -1 if it is being held or it doesnt exist
+        for (var i = 0; i < ws.stacks.length; i++) {
+            result = ws.stacks[i].indexOf(s);
+            if (result != -1) {
+                return result;
+            }
+        }
+        return -1;
+    }
     //////////////////////////////////////////////////////////////////////
     // private functions
     /**
@@ -3095,42 +3272,70 @@ var Planner;
      * "d". The code shows how to build a plan. Each step of the plan can
      * be added using the `push` method.
      */
+    function planInterpretation2(interpretation, state) {
+        var testNode = new WorldStateNode(state);
+        var stateGraph = new StateGraph();
+        var edges = stateGraph.outgoingEdges(testNode);
+        var testNode2 = edges[0].to;
+        var edges = stateGraph.outgoingEdges(testNode2);
+        var testNode3 = edges[0].to;
+        console.log(" " + testNode.toString() + " - actions: " + getPossibleActions(testNode.state));
+        console.log(" " + testNode2.toString() + " - actions: " + getPossibleActions(testNode2.state));
+        console.log(" " + edges[0].to.toString() + " - actions: " + getPossibleActions(edges[0].to.state));
+        console.log(" " + edges[1].to.toString() + " - actions: " + getPossibleActions(edges[1].to.state));
+        console.log(" " + edges[2].to.toString() + " - actions: " + getPossibleActions(edges[2].to.state));
+        return null;
+    }
     function planInterpretation(interpretation, state) {
-        // This function returns a dummy plan involving a random stack
-        do {
-            var pickstack = Math.floor(Math.random() * state.stacks.length);
-        } while (state.stacks[pickstack].length == 0);
-        var plan = [];
-        // First move the arm to the leftmost nonempty stack
-        if (pickstack < state.arm) {
-            plan.push("Moving left");
-            for (var i = state.arm; i > pickstack; i--) {
-                plan.push("l");
+        //var testNode : WorldStateNode = new WorldStateNode(state);
+        var stateGraph = new StateGraph();
+        //TODO heuristics function
+        var heuristics = function heuristics(node) {
+            var minhcost = Infinity;
+            for (var i = 0; i < interpretation.length; i++) {
+                minhcost = Math.min(minhcost, huer(node.state, interpretation[i][0]));
             }
-        }
-        else if (pickstack > state.arm) {
-            plan.push("Moving right");
-            for (var i = state.arm; i < pickstack; i++) {
+            return 0; //return minhcost;
+        };
+        var goalFunction = function goalf(node) {
+            var world = node.state;
+            var result = false;
+            for (var i = 0; i < interpretation.length; i++) {
+                var l = interpretation[i][0]; //assuming just 1 literal per potential goal
+                var subResult;
+                if (l.relation == "holding") {
+                    subResult = world.holding == l.args[0];
+                }
+                else {
+                    subResult = Interpreter.matchesRelation(l.args[0], l.args[1], l.relation, world);
+                }
+                if (!l.polarity) {
+                    subResult = !subResult;
+                }
+                result = result || subResult;
+            }
+            return result;
+        };
+        var result = aStarSearch(stateGraph, new WorldStateNode(state), goalFunction, heuristics, 1);
+        var plan = new Array();
+        for (var i = 0; i < result.path.length - 1; i++) {
+            var current = result.path[i].state;
+            var next = result.path[i + 1].state;
+            if (current.arm + 1 == next.arm) {
                 plan.push("r");
+                continue;
             }
-        }
-        // Then pick up the object
-        var obj = state.stacks[pickstack][state.stacks[pickstack].length - 1];
-        plan.push("Picking up the " + state.objects[obj].form, "p");
-        if (pickstack < state.stacks.length - 1) {
-            // Then move to the rightmost stack
-            plan.push("Moving as far right as possible");
-            for (var i = pickstack; i < state.stacks.length - 1; i++) {
-                plan.push("r");
-            }
-            // Then move back
-            plan.push("Moving back");
-            for (var i = state.stacks.length - 1; i > pickstack; i--) {
+            if (current.arm - 1 == next.arm) {
                 plan.push("l");
+                continue;
+            }
+            if (current.holding == undefined) {
+                plan.push("p");
+            }
+            else {
+                plan.push("d");
             }
         }
-        // Finally put it down again
-        plan.push("Dropping the " + state.objects[obj].form, "d");
         return plan;
     }
 })(Planner || (Planner = {}));
