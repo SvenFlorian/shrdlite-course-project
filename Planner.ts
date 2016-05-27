@@ -261,7 +261,6 @@ module Planner {
       return null;
     }
     function planInterpretation(interpretation : Interpreter.DNFFormula, state : WorldState) : string[] {
-      state.holding = undefined;
       //var testNode : WorldStateNode = new WorldStateNode(state);
       var stateGraph : StateGraph = new StateGraph();
 
@@ -278,7 +277,12 @@ module Planner {
         var result : boolean = false;
         for(var i : number = 0; i < interpretation.length; i++) {
             var l : Interpreter.Literal = interpretation[i][0]; //assuming just 1 literal per potential goal
-            var subResult : boolean = Interpreter.matchesRelation(l.args[0] ,l.args[1], l.relation, world);
+            var subResult : boolean;
+            if(l.relation == "holding") { //the only single paramter relation
+              subResult = node.state.holding == l.args[0];
+            }else{
+              Interpreter.matchesRelation(l.args[0] ,l.args[1], l.relation, world);
+            }
             if(!l.polarity) {
                 subResult = !subResult;
             }

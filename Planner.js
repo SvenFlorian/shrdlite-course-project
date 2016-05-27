@@ -203,7 +203,6 @@ var Planner;
         return null;
     }
     function planInterpretation(interpretation, state) {
-        state.holding = undefined;
         var stateGraph = new StateGraph();
         var heuristics = function heuristics(node) {
             var minhcost = Infinity;
@@ -217,7 +216,13 @@ var Planner;
             var result = false;
             for (var i = 0; i < interpretation.length; i++) {
                 var l = interpretation[i][0];
-                var subResult = Interpreter.matchesRelation(l.args[0], l.args[1], l.relation, world);
+                var subResult;
+                if (l.relation == "holding") {
+                    subResult = node.state.holding == l.args[0];
+                }
+                else {
+                    Interpreter.matchesRelation(l.args[0], l.args[1], l.relation, world);
+                }
                 if (!l.polarity) {
                     subResult = !subResult;
                 }
