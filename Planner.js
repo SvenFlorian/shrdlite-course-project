@@ -107,8 +107,6 @@ var Planner;
                 newEdge.cost = 1;
                 edgeList.push(newEdge);
             }
-            console.log(actions.toString());
-            console.log(node.toString());
             return edgeList;
         };
         StateGraph.prototype.compareNodes = function (n1, n2) {
@@ -174,9 +172,9 @@ var Planner;
                 cost += moveCost(pos, ws);
                 return cost;
             case "ontop":
-                return onTopCost(ws, lit);
+                return onTopCost(ws, lit.args);
             case "inside":
-                return onTopCost(ws, lit);
+                return onTopCost(ws, lit.args);
             case "above":
                 var obj1 = lit.args[0];
                 var obj2 = lit.args[1];
@@ -190,32 +188,28 @@ var Planner;
                 var pos2 = posOf(obj2, ws);
                 return Math.max(moveCost(pos1, ws), moveCost(pos2, ws)) + pickupCost(obj1, ws, pos1) + 1;
             case "beside":
-                var obj = lit.args[0];
-                var locPos = posOf(lit.args[1], ws);
-                var costLeft = Infinity;
-                var costRight = Infinity;
-                if (locPos < ws.stacks.length - 1) {
-                    costRight = moveCost(locPos + 1, ws);
-                }
-                if (locPos > 0) {
-                    costLeft = moveCost(locPos - 1, ws);
-                }
-                return Math.min(costLeft, costRight);
+                return besideCost(ws, lit.args);
             case "leftof":
-                var objPos = posOf(lit.args[0], ws);
-                return moveCost(objPos, ws);
+                return besideCost(ws, lit.args);
             case "rightof":
-                var objPos = posOf(lit.args[0], ws);
-                return moveCost(objPos, ws);
+                return besideCost(ws, lit.args);
         }
         return cost;
+    }
+    function besideCost(ws, args) {
+        var obj = args[0];
+        var loc = args[1];
+        var objPos = posOf(obj, ws);
+        var locPos = posOf(loc, ws);
+        return Math.min(pickupCost(obj, ws, objPos) + moveCost(objPos, ws), pickupCost(loc, ws, locPos)
+            + moveCost(locPos, ws)) + Math.abs(locPos - objPos) + 1;
     }
     function clearStackCost(index, ws) {
         return ws.stacks[index].length * 4 + Math.abs(ws.arm - index);
     }
-    function onTopCost(ws, lit) {
-        var obj = lit.args[0];
-        var loc = lit.args[1];
+    function onTopCost(ws, args) {
+        var obj = args[0];
+        var loc = args[1];
         var pos1 = posOf(obj, ws);
         var pos2 = posOf(loc, ws);
         if (loc == "floor") {
@@ -295,7 +289,6 @@ var Planner;
             }
             return minhcost;
         };
-        console.log(" " + testNode.toString() + " - cost: " + heuristics(testNode));
         return null;
     }
     function planInterpretation(interpretation, state) {

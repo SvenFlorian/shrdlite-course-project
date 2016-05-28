@@ -2768,6 +2768,7 @@ var Interpreter;
         }
         return true;
     }
+    Interpreter.isFeasible = isFeasible;
     /**
     @returns a mapping between the objects in the world and their names
     */
@@ -3165,8 +3166,6 @@ var Planner;
                 newEdge.cost = 1;
                 edgeList.push(newEdge);
             }
-            console.log(actions.toString());
-            console.log(node.toString());
             return edgeList;
         };
         /** A function that compares nodes. */
@@ -3210,19 +3209,36 @@ var Planner;
             result.push("d");
             return result;
         }
-        var temp = w1.stacks[w1.arm][w1.stacks[w1.arm].length - 1];
-        var obj2 = w1.objects[temp];
-        var obj = w1.objects[w1.holding];
-        if ((obj2 == null) || (obj == null)) {
-            return result;
+        var args = [w1.holding, w1.stacks[w1.arm][w1.arm - 1]]; //is this the right one ?
+        var lit;
+        if (args[1] == "box") {
+            lit = { relation: "inside", polarity: true, args: args };
         }
-        if (!(obj.form == "ball" && obj2.form != "box") &&
-            (!((obj.form == "box" && obj.size == "small") && (obj2.size == "small" && (obj2.form == "brick" || obj2.form == "pyramid")))) &&
-            (!((obj.size == "large" && obj.form == "box") && (obj2.form == "pyramid"))) &&
-            (!(obj2.size == "small" && obj.size == "large")) &&
-            (!(obj2.form == "ball")) && (w1.stacks[w1.arm].length < 5)) {
-            result.push("d");
+        else {
+            lit = { relation: "ontop", polarity: true, args: args };
+            if (Interpreter.isFeasible(lit, w1)) {
+                result.push("d");
+            }
         }
+        /**
+  
+        var temp : string = w1.stacks[w1.arm][w1.stacks[w1.arm].length-1];
+  
+        var obj2 : ObjectDefinition = w1.objects[temp];
+        var obj : ObjectDefinition = w1.objects[w1.holding];
+  
+        if((obj2 == null) || (obj == null))
+        {
+          return result;
+        }
+        if(!(obj.form == "ball" && obj2.form != "box") &&
+        (!((obj.form == "box" && obj.size == "small") && (obj2.size == "small" && (obj2.form == "brick" || obj2.form == "pyramid")))) &&
+        (!((obj.size == "large" && obj.form == "box") && (obj2.form == "pyramid"))) &&
+        (!(obj2.size == "small" && obj.size == "large")) &&
+        (!(obj2.form == "ball")) && (w1.stacks[w1.arm].length < 5)) {
+          result.push("d");
+        }
+        **/
         return result;
     }
     function heur(ws, lit) {
@@ -3375,7 +3391,6 @@ var Planner;
             }
             return minhcost; //return minhcost;
         };
-        console.log(" " + testNode.toString() + " - cost: " + heuristics(testNode));
         return null;
     }
     function planInterpretation(interpretation, state) {

@@ -161,6 +161,7 @@ var Interpreter;
         }
         return true;
     }
+    Interpreter.isFeasible = isFeasible;
     function initObjectMapping(state) {
         var mObject = new Array();
         var mString = new Array();

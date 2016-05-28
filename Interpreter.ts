@@ -151,7 +151,7 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
         return interpretation;
     }
 
-    function isFeasible(lit : Literal, state : WorldState) : boolean {
+    export function isFeasible(lit : Literal, state : WorldState) : boolean {
       if (lit.relation == "holding" && lit.args[0] == "floor") {
         return false;
       } //otherwise there are 2 arguments

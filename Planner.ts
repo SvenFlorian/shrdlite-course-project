@@ -135,8 +135,6 @@ module Planner {
           newEdge.cost = 1;
           edgeList.push(newEdge);
         }
-        console.log(actions.toString());
-        console.log(node.toString());
         return edgeList;
       }
       /** A function that compares nodes. */
@@ -180,6 +178,20 @@ module Planner {
         result.push("d");
         return result;
       }
+
+      /** //This is super duper slow for some reason ? But this approach is nicer, no ?
+      var args : string[] = [w1.holding, w1.stacks[w1.arm][w1.stacks[w1.arm].length-1]]; //is this the right one ?
+      var lit : Interpreter.Literal;
+      if(args[1] == "box") {
+        lit = {relation : "inside", polarity : true, args : args};
+      }else{
+        lit = {relation : "ontop", polarity : true, args : args};
+      }
+      if(Interpreter.isFeasible(lit,w1)) {
+          result.push("d");
+      }
+      **/
+
       var temp : string = w1.stacks[w1.arm][w1.stacks[w1.arm].length-1];
 
       var obj2 : ObjectDefinition = w1.objects[temp];
@@ -198,7 +210,7 @@ module Planner {
       }
       return result;
     }
-    function heur(ws : WorldState, lit : Interpreter.Literal) : number {
+    function heur(ws : WorldState, lit : Interpreter.Literal) : number { //not taking polarities in account
       var cost : number = 0;
       switch(lit.relation){
         case "holding" :
@@ -207,9 +219,9 @@ module Planner {
           cost += moveCost(pos,ws);
           return cost;
         case "ontop" :
-          return onTopCost(ws,lit);
+          return onTopCost(ws,lit.args);
         case "inside" :
-          return onTopCost(ws,lit);
+          return onTopCost(ws,lit.args);
         case "above" :
           var obj1 : string = lit.args[0];
           var obj2 : string = lit.args[1];
@@ -223,34 +235,28 @@ module Planner {
           var pos2 : number = posOf(obj2,ws);
           return Math.max(moveCost(pos1,ws),moveCost(pos2,ws))+pickupCost(obj1,ws,pos1)+1; //+1 is dropcost
         case "beside" :
-          var obj : string = lit.args[0];
-          var locPos : number = posOf(lit.args[1], ws);
-          var costLeft : number = Infinity;
-          var costRight : number = Infinity;
-          if( locPos < ws.stacks.length - 1)
-          {
-             costRight = moveCost(locPos + 1, ws);
-          }
-          if(locPos > 0)
-          {
-             costLeft = moveCost(locPos - 1, ws);
-          }
-          return Math.min(costLeft, costRight);
+          return besideCost(ws, lit.args);
         case "leftof" :
-          var objPos : number = posOf(lit.args[0], ws);
-          return moveCost( objPos, ws);
+          return besideCost(ws, lit.args);
         case "rightof" :
-          var objPos : number = posOf(lit.args[0], ws);
-          return moveCost( objPos, ws);
+          return besideCost(ws, lit.args);
         }
       return cost;
+    }
+    function besideCost(ws : WorldState, args : string[]) : number{
+      var obj : string = args[0];
+      var loc : string = args[1];
+      var objPos : number = posOf(obj, ws);
+      var locPos : number = posOf(loc, ws);
+      return Math.min(pickupCost(obj,ws,objPos)+moveCost(objPos, ws),pickupCost(loc,ws,locPos)
+            +moveCost(locPos, ws))+Math.abs(locPos-objPos)+1;
     }
     function clearStackCost(index : number,ws : WorldState){
       return ws.stacks[index].length*4+Math.abs(ws.arm-index);
     }
-    function onTopCost(ws : WorldState, lit : Interpreter.Literal) : number {
-      var obj : string = lit.args[0];
-      var loc : string = lit.args[1];
+    function onTopCost(ws : WorldState, args : string[]) : number {
+      var obj : string = args[0];
+      var loc : string = args[1];
       var pos1 : number = posOf(obj,ws);
       var pos2 : number = posOf(loc,ws);
       if(loc == "floor") {
@@ -349,8 +355,6 @@ module Planner {
         }
         return minhcost;//return minhcost;
       }
-      console.log(" " + testNode.toString() + " - cost: " + heuristics(testNode));
-
 
       return null;
     }
