@@ -256,8 +256,12 @@ var Interpreter;
         }
         switch (relation) {
             case "ontop":
+                if (col1 == col2 && row1 == row2 + 1 && state.objects[relative].form != "box") {
+                    return true;
+                }
+                break;
             case "inside":
-                if (col1 == col2 && row1 == row2 + 1) {
+                if (col1 == col2 && row1 == row2 + 1 && state.objects[relative].form == "box") {
                     return true;
                 }
                 break;

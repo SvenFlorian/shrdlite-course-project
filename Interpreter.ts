@@ -334,8 +334,8 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
 
       if (row1 < 0 || row2 < 0 || col1 < 0 || col2 < 0) { return false; }
       switch (relation) {
-        case "ontop": //fall through to "inside" case
-        case "inside": if (col1 == col2 && row1 == row2 + 1) { return true; } break;
+        case "ontop": if (col1 == col2 && row1 == row2 + 1 && state.objects[relative].form != "box") { return true; } break;
+        case "inside": if (col1 == col2 && row1 == row2 + 1 && state.objects[relative].form == "box") { return true; } break;
         case "above": if (col1 == col2 && row1 > row2) { return true; } break;
         case "under": if (col1 == col2 && row1 < row2) { return true; } break;
         case "leftof": if (col1 < col2) { return true; } break;
