@@ -2692,6 +2692,9 @@ var Interpreter;
         var obj2;
         //special case for floor, since it doesnt exist in the worldstate
         if (lit.args[0] == "floor") {
+            if (lit.relation != "under") {
+                return false;
+            } //first object floor only okay for "under"
             obj1 = new Object();
             obj1.form = "floor";
         }
@@ -2699,6 +2702,9 @@ var Interpreter;
             obj1 = state.objects[lit.args[0]];
         }
         if (lit.args[1] == "floor") {
+            if (lit.relation == "under" || lit.relation == "beside" || lit.relation == "rightof" || lit.relation == "leftof") {
+                return false;
+            }
             obj2 = new Object();
             obj2.form = "floor";
         }
@@ -2708,9 +2714,13 @@ var Interpreter;
         if (lit.args[1] == lit.args[0]) {
             return false;
         }
+        if ((lit.relation == "ontop" || lit.relation == "inside" || lit.relation == "above")
+            && (obj2.size == "small" && obj1.size == "large")) {
+            return false;
+        }
         switch (lit.relation) {
             case "ontop":
-                if (obj2.form == "box" || obj1.form == "floor") {
+                if (obj2.form == "box" || obj2.form == "ball") {
                     return false;
                 }
                 if (obj1 == "ball" && obj2.form != "floor") {
@@ -2722,45 +2732,26 @@ var Interpreter;
                 if ((obj1.size == "large" && obj1.form == "box") && (obj2.form == "pyramid")) {
                     return false;
                 }
-                if (obj2.size == "small" && obj1.size == "large") {
-                    return false;
-                }
                 if (obj2.form == "table" && obj1.form == "ball") {
                     return false;
                 }
                 break;
             case "inside":
-                if (obj2.form != "box" || obj1.form == "floor") {
+                if (obj2.form != "box") {
                     return false;
                 }
-                else if ((obj1.size == obj2.size && (obj1.form != "ball" && obj1.form != "brick")) ||
-                    (obj1.size == "large" && obj2.size == "small")) {
+                else if (obj1.size == obj2.size && (obj1.form != "ball" && obj1.form != "brick" && obj1.form != "table")) {
                     return false;
                 }
                 break;
             case "leftof":
-                if (obj2.form == "floor" || obj1.form == "floor") {
-                    return false;
-                }
                 break;
             case "rightof":
-                if (obj2.form == "floor" || obj1.form == "floor") {
-                    return false;
-                }
                 break;
             case "beside":
-                if (obj2.form == "floor" || obj1.form == "floor") {
-                    return false;
-                }
                 break;
             case "above":
                 if (obj2.form == "ball") {
-                    return false;
-                }
-                if (obj1.size == "large" && obj2.size == "small") {
-                    return false;
-                }
-                if (obj1.form == "floor") {
                     return false;
                 }
                 break;
@@ -2769,9 +2760,6 @@ var Interpreter;
                     return false;
                 }
                 if (obj1.size == "small" && obj2.size == "large") {
-                    return false;
-                }
-                if (obj2.form == "floor") {
                     return false;
                 }
                 break;
@@ -2876,9 +2864,13 @@ var Interpreter;
             return false;
         }
         switch (relation) {
-            case "ontop": //fall through to "inside" case
+            case "ontop":
+                if (col1 == col2 && row1 == row2 + 1 && state.objects[relative].form != "box") {
+                    return true;
+                }
+                break;
             case "inside":
-                if (col1 == col2 && row1 == row2 + 1) {
+                if (col1 == col2 && row1 == row2 + 1 && state.objects[relative].form == "box") {
                     return true;
                 }
                 break;
@@ -3017,7 +3009,6 @@ function aStarSearch(graph, start, goal, heuristics, timeout) {
         //add currentnode's neighbours to frontier and calculate costs
         for (var i = 0; i < edges.length; i++) {
             var newNode = edges[i].to;
-            //console.log(newNode.toString() + " :h= " + heuristics(newNode));
             var arr = visitedNodes.toArray();
             if (visitedNodes.contains(newNode)) {
                 continue;
@@ -3121,9 +3112,6 @@ var Planner;
             this.state = state;
         }
         WorldStateNode.prototype.toString = function () {
-            if (this.state == null) {
-                throw new Error("this state is null!");
-            }
             if (this.identifier != null) {
                 return this.identifier;
             }
@@ -3139,6 +3127,7 @@ var Planner;
             }
             s += this.state.arm;
             s += this.state.holding;
+            this.identifier = s;
             return s;
         };
         return WorldStateNode;
@@ -3240,47 +3229,93 @@ var Planner;
         var cost = 0;
         switch (lit.relation) {
             case "holding":
-                ;
-                cost = pickupCost(lit.args[0], ws);
-                break;
+                var pos = posOf(lit.args[0], ws);
+                cost += pickupCost(lit.args[0], ws, pos);
+                cost += moveCost(pos, ws);
+                return cost;
             case "ontop":
-                var obj = lit.args[0];
-                var objPos = posOf(obj, ws);
-                var loc = lit.args[1];
-                var locPos = posOf(loc, ws);
-                if (loc == "floor") {
-                }
-                cost += pickupCost(obj, ws);
-                cost += dropCost(loc, ws);
-                break;
+                return onTopCost(ws, lit);
             case "inside":
-                break;
+                return onTopCost(ws, lit);
             case "above":
-                break;
+                var obj1 = lit.args[0];
+                var obj2 = lit.args[1];
+                var pos1 = posOf(obj1, ws);
+                var pos2 = posOf(obj2, ws);
+                return Math.max(moveCost(pos1, ws), moveCost(pos2, ws)) + pickupCost(obj1, ws, pos1) + 1; //+1 is dropcost
             case "under":
-                break;
+                var obj2 = lit.args[0];
+                var obj1 = lit.args[1];
+                var pos1 = posOf(obj1, ws);
+                var pos2 = posOf(obj2, ws);
+                return Math.max(moveCost(pos1, ws), moveCost(pos2, ws)) + pickupCost(obj1, ws, pos1) + 1; //+1 is dropcost
             case "beside":
-                break;
+                var obj = lit.args[0];
+                var locPos = posOf(lit.args[1], ws);
+                var costLeft = Infinity;
+                var costRight = Infinity;
+                if (locPos < ws.stacks.length - 1) {
+                    costRight = moveCost(locPos + 1, ws);
+                }
+                if (locPos > 0) {
+                    costLeft = moveCost(locPos - 1, ws);
+                }
+                return Math.min(costLeft, costRight);
             case "leftof":
-                break;
+                var objPos = posOf(lit.args[0], ws);
+                return moveCost(objPos, ws);
             case "rightof":
-                break;
+                var objPos = posOf(lit.args[0], ws);
+                return moveCost(objPos, ws);
         }
         return cost;
     }
-    function dropCost(desiredObject, ws) {
-        return 0;
+    function clearStackCost(index, ws) {
+        return ws.stacks[index].length * 4 + Math.abs(ws.arm - index);
     }
-    function pickupCost(desiredObject, ws) {
+    function onTopCost(ws, lit) {
+        var obj = lit.args[0];
+        var loc = lit.args[1];
+        var pos1 = posOf(obj, ws);
+        var pos2 = posOf(loc, ws);
+        if (loc == "floor") {
+            var bestIndex = 0;
+            var cost = 0;
+            for (var i = 1; i < ws.stacks.length; i++) {
+                if (clearStackCost(i, ws) < clearStackCost(bestIndex, ws)) {
+                    bestIndex = i;
+                }
+            }
+            return pickupCost(obj, ws, pos1) + clearStackCost(bestIndex, ws) + 1; //+1 is the dropcost
+        }
+        return pickupCost(obj, ws, pos1) + dropCost(loc, ws, pos2) + Math.max(moveCost(pos1, ws), moveCost(pos2, ws));
+    }
+    function moveCost(pos, state) {
+        if (pos == -1) {
+            return 0;
+        }
+        else if (pos == Infinity) {
+            throw new Error("floor!");
+        }
+        else {
+            return Math.abs(state.arm - pos);
+        }
+    }
+    function dropCost(loc, ws, pos) {
+        if (ws.holding == loc) {
+            return 1;
+        }
+        return nrOfItemsOnTopOf(loc, ws, pos) * 4 + 1;
+        ;
+    }
+    function pickupCost(desiredObject, ws, pos) {
         var cost = 0;
         if (ws.holding == desiredObject) {
             return 0;
         }
-        var pos = posOf(desiredObject, ws);
-        cost += Math.abs(ws.arm - pos);
         cost += nrOfItemsOnTopOf(desiredObject, ws, pos) * 4;
         if (ws.holding != undefined) {
-            cost += 3;
+            cost += 2;
         }
         return cost;
     }
@@ -3289,7 +3324,7 @@ var Planner;
             return 0;
         }
         var result = 0;
-        for (var i = 0; i < ws.stacks[pos].length; i++) {
+        for (var i = ws.stacks[pos].length - 1; i >= 0; i--) {
             if (ws.stacks[pos][i] == s) {
                 break;
             }
@@ -3303,9 +3338,10 @@ var Planner;
             return Infinity;
         }
         for (var i = 0; i < ws.stacks.length; i++) {
-            result = ws.stacks[i].indexOf(s);
-            if (result != -1) {
-                return result;
+            for (var j = 0; j < ws.stacks[i].length; j++) {
+                if (ws.stacks[i][j] == s) {
+                    return i;
+                }
             }
         }
         return result;
@@ -3332,28 +3368,25 @@ var Planner;
      */
     function planInterpretation2(interpretation, state) {
         var testNode = new WorldStateNode(state);
-        var stateGraph = new StateGraph();
-        var edges = stateGraph.outgoingEdges(testNode);
-        var testNode2 = edges[0].to;
-        var edges = stateGraph.outgoingEdges(testNode2);
-        var testNode3 = edges[0].to;
-        console.log(" " + testNode.toString() + " - actions: " + getPossibleActions(testNode.state));
-        console.log(" " + testNode2.toString() + " - actions: " + getPossibleActions(testNode2.state));
-        console.log(" " + edges[0].to.toString() + " - actions: " + getPossibleActions(edges[0].to.state));
-        console.log(" " + edges[1].to.toString() + " - actions: " + getPossibleActions(edges[1].to.state));
-        console.log(" " + edges[2].to.toString() + " - actions: " + getPossibleActions(edges[2].to.state));
+        var heuristics = function heuristicsf(node) {
+            var minhcost = Infinity;
+            for (var i = 0; i < interpretation.length; i++) {
+                minhcost = Math.min(minhcost, heur(node.state, interpretation[i][0]));
+            }
+            return minhcost; //return minhcost;
+        };
+        console.log(" " + testNode.toString() + " - cost: " + heuristics(testNode));
         return null;
     }
     function planInterpretation(interpretation, state) {
         //var testNode : WorldStateNode = new WorldStateNode(state);
         var stateGraph = new StateGraph();
         //TODO heuristics function
-        var heuristics = function heuristics(node) {
+        var heuristics = function heuristicsf(node) {
             var minhcost = Infinity;
             for (var i = 0; i < interpretation.length; i++) {
                 minhcost = Math.min(minhcost, heur(node.state, interpretation[i][0]));
             }
-            console.log(minhcost);
             return minhcost; //return minhcost;
         };
         var goalFunction = function goalf(node) {
@@ -3375,7 +3408,7 @@ var Planner;
             }
             return result;
         };
-        var result = aStarSearch(stateGraph, new WorldStateNode(state), goalFunction, heuristics, 1);
+        var result = aStarSearch(stateGraph, new WorldStateNode(state), goalFunction, heuristics, 10);
         var plan = new Array();
         for (var i = 0; i < result.path.length - 1; i++) {
             var current = result.path[i].state;

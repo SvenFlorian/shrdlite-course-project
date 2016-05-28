@@ -85,6 +85,9 @@ var Interpreter;
         var obj1;
         var obj2;
         if (lit.args[0] == "floor") {
+            if (lit.relation != "under") {
+                return false;
+            }
             obj1 = new Object();
             obj1.form = "floor";
         }
@@ -92,6 +95,9 @@ var Interpreter;
             obj1 = state.objects[lit.args[0]];
         }
         if (lit.args[1] == "floor") {
+            if (lit.relation == "under" || lit.relation == "beside" || lit.relation == "rightof" || lit.relation == "leftof") {
+                return false;
+            }
             obj2 = new Object();
             obj2.form = "floor";
         }
@@ -101,9 +107,13 @@ var Interpreter;
         if (lit.args[1] == lit.args[0]) {
             return false;
         }
+        if ((lit.relation == "ontop" || lit.relation == "inside" || lit.relation == "above")
+            && (obj2.size == "small" && obj1.size == "large")) {
+            return false;
+        }
         switch (lit.relation) {
             case "ontop":
-                if (obj2.form == "box" || obj1.form == "floor") {
+                if (obj2.form == "box" || obj2.form == "ball") {
                     return false;
                 }
                 if (obj1 == "ball" && obj2.form != "floor") {
@@ -115,45 +125,26 @@ var Interpreter;
                 if ((obj1.size == "large" && obj1.form == "box") && (obj2.form == "pyramid")) {
                     return false;
                 }
-                if (obj2.size == "small" && obj1.size == "large") {
-                    return false;
-                }
                 if (obj2.form == "table" && obj1.form == "ball") {
                     return false;
                 }
                 break;
             case "inside":
-                if (obj2.form != "box" || obj1.form == "floor") {
+                if (obj2.form != "box") {
                     return false;
                 }
-                else if ((obj1.size == obj2.size && (obj1.form != "ball" && obj1.form != "brick" && obj1.form != "table")) ||
-                    (obj1.size == "large" && obj2.size == "small")) {
+                else if (obj1.size == obj2.size && (obj1.form != "ball" && obj1.form != "brick" && obj1.form != "table")) {
                     return false;
                 }
                 break;
             case "leftof":
-                if (obj2.form == "floor" || obj1.form == "floor") {
-                    return false;
-                }
                 break;
             case "rightof":
-                if (obj2.form == "floor" || obj1.form == "floor") {
-                    return false;
-                }
                 break;
             case "beside":
-                if (obj2.form == "floor" || obj1.form == "floor") {
-                    return false;
-                }
                 break;
             case "above":
                 if (obj2.form == "ball") {
-                    return false;
-                }
-                if (obj1.size == "large" && obj2.size == "small") {
-                    return false;
-                }
-                if (obj1.form == "floor") {
                     return false;
                 }
                 break;
@@ -162,9 +153,6 @@ var Interpreter;
                     return false;
                 }
                 if (obj1.size == "small" && obj2.size == "large") {
-                    return false;
-                }
-                if (obj2.form == "floor") {
                     return false;
                 }
                 break;
