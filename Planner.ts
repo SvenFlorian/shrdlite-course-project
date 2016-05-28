@@ -55,7 +55,7 @@ module Planner {
         return result.plan.join(", ");
     }
 
-    function cloneStacks(s : Stack[]) : Stack[] { // A lot of computation will be done here
+    function cloneStacks(s : Stack[]) : Stack[] {
       var newStackList : Stack[] = new Array<Array<string>>();
       for(var i : number = 0; i < s.length ; i++) {
         var newStack : Stack = new Array<string>();
@@ -179,19 +179,6 @@ module Planner {
         return result;
       }
 
-      /** //This is super duper slow for some reason ? But this approach is nicer, no ?
-      var args : string[] = [w1.holding, w1.stacks[w1.arm][w1.stacks[w1.arm].length-1]]; //is this the right one ?
-      var lit : Interpreter.Literal;
-      if(args[1] == "box") {
-        lit = {relation : "inside", polarity : true, args : args};
-      }else{
-        lit = {relation : "ontop", polarity : true, args : args};
-      }
-      if(Interpreter.isFeasible(lit,w1)) {
-          result.push("d");
-      }
-      **/
-
       var temp : string = w1.stacks[w1.arm][w1.stacks[w1.arm].length-1];
 
       var obj2 : ObjectDefinition = w1.objects[temp];
@@ -203,14 +190,15 @@ module Planner {
       }
       if(!(obj.form == "ball" && obj2.form != "box") &&
       (!((obj.form == "box" && obj.size == "small") && (obj2.size == "small" && (obj2.form == "brick" || obj2.form == "pyramid")))) &&
-      (!((obj.size == "large" && obj.form == "box") && (obj2.form == "pyramid"))) &&
+      (!((obj.size == "large" && obj.form == "box") && (obj2.form != "brick" && obj2.form != "table"))) &&
       (!(obj2.size == "small" && obj.size == "large")) &&
       (!(obj2.form == "ball")) && (w1.stacks[w1.arm].length < 5)) {
         result.push("d");
       }
       return result;
     }
-    function heur(ws : WorldState, lit : Interpreter.Literal) : number { //not taking polarities in account
+    //@returns the heuristic cost of a single literal
+    function heur(ws : WorldState, lit : Interpreter.Literal) : number { //not taking polarities in to account
       var cost : number = 0;
       switch(lit.relation){
         case "holding" :
@@ -346,48 +334,34 @@ module Planner {
      * "d". The code shows how to build a plan. Each step of the plan can
      * be added using the `push` method.
      */
-    function planInterpretation2(interpretation : Interpreter.DNFFormula, state : WorldState) : string[] {
-      var testNode : WorldStateNode = new WorldStateNode(state);
-      var heuristics = function heuristicsf(node : WorldStateNode) : number {
-        var minhcost : number = Infinity;
-        for(var i : number = 0; i < interpretation.length; i++) {
-          minhcost = Math.min(minhcost,heur(node.state,interpretation[i][0]));
-        }
-        return minhcost;//return minhcost;
-      }
-
-      return null;
-    }
     function planInterpretation(interpretation : Interpreter.DNFFormula, state : WorldState) : string[] {
       //var testNode : WorldStateNode = new WorldStateNode(state);
       var stateGraph : StateGraph = new StateGraph();
 
-      //TODO heuristics function
+      //The heuristics function
       var heuristics = function heuristicsf(node : WorldStateNode) : number {
         var minhcost : number = Infinity;
         for(var i : number = 0; i < interpretation.length; i++) {
           minhcost = Math.min(minhcost,heur(node.state,interpretation[i][0]));
         }
-        return minhcost;//return minhcost;
+        return minhcost;
       }
-      var goalFunction = function goalf(node : WorldStateNode) : boolean {
+      var goalFunction = function goalf(node : WorldStateNode) : boolean { //not taking polarities into account
 
         var world : WorldState = node.state;
-        var result : boolean = false;
         for(var i : number = 0; i < interpretation.length; i++) {
-            var l : Interpreter.Literal = interpretation[i][0]; //assuming just 1 literal per potential goal
+            var l : Interpreter.Literal = interpretation[i][0];
             var subResult : boolean;
             if(l.relation == "holding") { //the only single parameter relation
               subResult = world.holding == l.args[0];
             }else{
               subResult = Interpreter.matchesRelation(l.args[0] ,l.args[1], l.relation, world);
             }
-            if(!l.polarity) {
-                subResult = !subResult;
+            if (subResult) {
+              return true;
             }
-            result = result || subResult;
         }
-        return result;
+        return false;
       }
       var result : SearchResult<WorldStateNode> = aStarSearch(stateGraph,new WorldStateNode(state),goalFunction,heuristics,10);
       var plan : string[] = new Array<string>();

@@ -156,7 +156,7 @@ var Planner;
         }
         if (!(obj.form == "ball" && obj2.form != "box") &&
             (!((obj.form == "box" && obj.size == "small") && (obj2.size == "small" && (obj2.form == "brick" || obj2.form == "pyramid")))) &&
-            (!((obj.size == "large" && obj.form == "box") && (obj2.form == "pyramid"))) &&
+            (!((obj.size == "large" && obj.form == "box") && (obj2.form != "brick" && obj2.form != "table"))) &&
             (!(obj2.size == "small" && obj.size == "large")) &&
             (!(obj2.form == "ball")) && (w1.stacks[w1.arm].length < 5)) {
             result.push("d");
@@ -280,17 +280,6 @@ var Planner;
         }
         return result;
     }
-    function planInterpretation2(interpretation, state) {
-        var testNode = new WorldStateNode(state);
-        var heuristics = function heuristicsf(node) {
-            var minhcost = Infinity;
-            for (var i = 0; i < interpretation.length; i++) {
-                minhcost = Math.min(minhcost, heur(node.state, interpretation[i][0]));
-            }
-            return minhcost;
-        };
-        return null;
-    }
     function planInterpretation(interpretation, state) {
         var stateGraph = new StateGraph();
         var heuristics = function heuristicsf(node) {
@@ -302,7 +291,6 @@ var Planner;
         };
         var goalFunction = function goalf(node) {
             var world = node.state;
-            var result = false;
             for (var i = 0; i < interpretation.length; i++) {
                 var l = interpretation[i][0];
                 var subResult;
@@ -312,12 +300,11 @@ var Planner;
                 else {
                     subResult = Interpreter.matchesRelation(l.args[0], l.args[1], l.relation, world);
                 }
-                if (!l.polarity) {
-                    subResult = !subResult;
+                if (subResult) {
+                    return true;
                 }
-                result = result || subResult;
             }
-            return result;
+            return false;
         };
         var result = aStarSearch(stateGraph, new WorldStateNode(state), goalFunction, heuristics, 10);
         var plan = new Array();
