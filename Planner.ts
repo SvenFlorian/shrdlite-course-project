@@ -82,7 +82,7 @@ module Planner {
       constructor(state : WorldState) {
        this.state = state;
       }
-      toString(): string { //TODO perfrom just once?
+      toString(): string {
         if(this.identifier != null) {
           return this.identifier;
         }
