@@ -75,7 +75,7 @@ module Shrdlite {
             if (interpretations.length > 1) {
                 // several interpretations were found -- how should this be handled?
                 // should we throw an ambiguity error?
-                // ... throw new Error("Ambiguous utterance");
+                throw new Error("Ambiguous utterance");
                 // or should we let the planner decide?
             }
         }
