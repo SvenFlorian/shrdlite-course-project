@@ -84,6 +84,7 @@ module Planner {
       }
       toString(): string {
         if(this.identifier != null) {
+          //some dynamic programming for performance
           return this.identifier;
         }
         var s :string = "";
@@ -137,7 +138,7 @@ module Planner {
         }
         return edgeList;
       }
-      /** A function that compares nodes. */
+      /** A function that compares nodes. Returns 0 if they are equal and 1 otherwise */
       compareNodes(n1 : WorldStateNode, n2 : WorldStateNode) : number {
         var s1 : WorldState = n1.state;
         var s2 : WorldState = n2.state;
@@ -239,6 +240,7 @@ module Planner {
       return Math.min(pickupCost(obj,ws,objPos)+moveCost(objPos, ws),pickupCost(loc,ws,locPos)
             +moveCost(locPos, ws))+Math.abs(locPos-objPos)+1;
     }
+    //The minimum cost of emptying a stack
     function clearStackCost(index : number,ws : WorldState){
       return ws.stacks[index].length*4+Math.abs(ws.arm-index);
     }
@@ -259,6 +261,7 @@ module Planner {
       }
       return pickupCost(obj,ws,pos1)+dropCost(loc,ws,pos2)+Math.max(moveCost(pos1,ws),moveCost(pos2,ws));
     }
+    //The minimum cost of moving from state.arm to pos
     function moveCost(pos : number,state : WorldState) : number{
       if(pos == -1) { //if floor or holding
         return 0;
@@ -268,6 +271,7 @@ module Planner {
         return Math.abs(state.arm-pos);
       }
     }
+    //The minumum cost of dropping something in loc
     function dropCost(loc : string, ws : WorldState, pos : number) : number {
       if(ws.holding == loc){ //then pos = -1
         return 1;
@@ -275,6 +279,7 @@ module Planner {
       return nrOfItemsOnTopOf(loc,ws,pos)*4+1;
       ;
     }
+    //The minimum cost of picking up desiredObject
     function pickupCost(desiredObject : string, ws : WorldState, pos : number) : number {
       var cost : number = 0;
       if(ws.holding == desiredObject) {
@@ -299,6 +304,7 @@ module Planner {
       }
       return result;
     }
+    //returns the index of the stack containing the object s
     function posOf(s : string, ws : WorldState) : number {
       var result : number = -1; //returns -1 if it is being held or it doesnt exist
       if(s == "floor") {
@@ -313,18 +319,7 @@ module Planner {
       }
       return result;
     }
-    //////////////////////////////////////////////////////////////////////
-    // private functions
-
     /**
-     * The core planner function. The code here is just a template;
-     * you should rewrite this function entirely. In this template,
-     * the code produces a dummy plan which is not connected to the
-     * argument `interpretation`, but your version of the function
-     * should be such that the resulting plan depends on
-     * `interpretation`.
-     *
-     *
      * @param interpretation The logical interpretation of the user's desired goal. The plan needs to be such that by executing it, the world is put into a state that satisfies this goal.
      * @param state The current world state.
      * @returns Basically, a plan is a
@@ -335,7 +330,6 @@ module Planner {
      * be added using the `push` method.
      */
     function planInterpretation(interpretation : Interpreter.DNFFormula, state : WorldState) : string[] {
-      //var testNode : WorldStateNode = new WorldStateNode(state);
       var stateGraph : StateGraph = new StateGraph();
 
       //The heuristics function
@@ -346,8 +340,8 @@ module Planner {
         }
         return minhcost;
       }
-      var goalFunction = function goalf(node : WorldStateNode) : boolean { //not taking polarities into account
-
+      // The goalfunction , not taking polarities into account, since we don't handle them.
+      var goalFunction = function goalf(node : WorldStateNode) : boolean {
         var world : WorldState = node.state;
         for(var i : number = 0; i < interpretation.length; i++) {
             var l : Interpreter.Literal = interpretation[i][0];
@@ -365,8 +359,8 @@ module Planner {
       }
       var result : SearchResult<WorldStateNode> = aStarSearch(stateGraph,new WorldStateNode(state),goalFunction,heuristics,10);
 
+      //reconstruct the command sequence from result.path
       var plan : string[] = new Array<string>();
-
       for(var i : number = 0; i < result.path.length-1; i++) {
         var current : WorldState = result.path[i].state;
         var next : WorldState = result.path[i+1].state;

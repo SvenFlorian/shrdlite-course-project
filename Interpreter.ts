@@ -93,8 +93,6 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
         return (lit.polarity ? "" : "-") + lit.relation + "(" + lit.args.join(",") + ")";
     }
 
-    //////////////////////////////////////////////////////////////////////
-    // private functions
     /**
      * @param cmd The actual command. Note that it is *not* a string, but rather an object of type `Command` (as it has been parsed by the parser).
      * @param state The current state of the world. Useful to look up objects in the world.
@@ -109,21 +107,14 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
         interpretation = [
             ];
         if(cmd.command == "take") {
-          if(cmd.entity == null && state.holding == null)
-          {
-            throw new Error("Cannot take 'it', be more specific!");
-          }
-          else{
-            var potentialObjs : Array<string> = getMatchingObjects(cmd.entity.object, mObject, mString, state).toArray();
-            for(var i = 0; i < potentialObjs.length; i++) {
-              var obj : string = potentialObjs[i];
-              var lit : Literal = {polarity: true, relation: "holding", args: [obj]};
-              if(isFeasible(lit, state)) {
-                interpretation.push([lit]);
-              }
+          var potentialObjs : Array<string> = getMatchingObjects(cmd.entity.object, mObject, mString, state).toArray();
+          for(var i = 0; i < potentialObjs.length; i++) {
+            var obj : string = potentialObjs[i];
+            var lit : Literal = {polarity: true, relation: "holding", args: [obj]};
+            if(isFeasible(lit, state)) {
+              interpretation.push([lit]);
             }
           }
-
         }else if (cmd.command == "move" || cmd.command == "put") {
           if(cmd.entity == null && state.holding == null)
           {
@@ -140,6 +131,7 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
                 var lit : Literal = {polarity: true, relation: cmd.location.relation, args: [obj,loc]};
                 if(isFeasible(lit, state)) {
                   interpretation.push([lit]);
+
                 }
               }
             }
@@ -336,6 +328,7 @@ Top-level function for the Interpreter. It calls `interpretCommand` for each pos
       return false;
     }
 
+    //@returns the indexes of where the given object is in the given worldstate
     function findObjectInWorld(object : string, state : WorldState) : [number, number] {
       for (var i = 0; i < state.stacks.length; i++) {
         for (var j = 0; j < state.stacks[i].length; j++) {

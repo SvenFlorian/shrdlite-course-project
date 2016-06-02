@@ -38,17 +38,12 @@ var Interpreter;
         var interpretation;
         interpretation = [];
         if (cmd.command == "take") {
-            if (cmd.entity == null && state.holding == null) {
-                throw new Error("Cannot take 'it', be more specific!");
-            }
-            else {
-                var potentialObjs = getMatchingObjects(cmd.entity.object, mObject, mString, state).toArray();
-                for (var i = 0; i < potentialObjs.length; i++) {
-                    var obj = potentialObjs[i];
-                    var lit = { polarity: true, relation: "holding", args: [obj] };
-                    if (isFeasible(lit, state)) {
-                        interpretation.push([lit]);
-                    }
+            var potentialObjs = getMatchingObjects(cmd.entity.object, mObject, mString, state).toArray();
+            for (var i = 0; i < potentialObjs.length; i++) {
+                var obj = potentialObjs[i];
+                var lit = { polarity: true, relation: "holding", args: [obj] };
+                if (isFeasible(lit, state)) {
+                    interpretation.push([lit]);
                 }
             }
         }

@@ -2630,8 +2630,6 @@ var Interpreter;
         return (lit.polarity ? "" : "-") + lit.relation + "(" + lit.args.join(",") + ")";
     }
     Interpreter.stringifyLiteral = stringifyLiteral;
-    //////////////////////////////////////////////////////////////////////
-    // private functions
     /**
      * @param cmd The actual command. Note that it is *not* a string, but rather an object of type `Command` (as it has been parsed by the parser).
      * @param state The current state of the world. Useful to look up objects in the world.
@@ -2644,17 +2642,12 @@ var Interpreter;
         var interpretation;
         interpretation = [];
         if (cmd.command == "take") {
-            if (cmd.entity == null && state.holding == null) {
-                throw new Error("Cannot take 'it', be more specific!");
-            }
-            else {
-                var potentialObjs = getMatchingObjects(cmd.entity.object, mObject, mString, state).toArray();
-                for (var i = 0; i < potentialObjs.length; i++) {
-                    var obj = potentialObjs[i];
-                    var lit = { polarity: true, relation: "holding", args: [obj] };
-                    if (isFeasible(lit, state)) {
-                        interpretation.push([lit]);
-                    }
+            var potentialObjs = getMatchingObjects(cmd.entity.object, mObject, mString, state).toArray();
+            for (var i = 0; i < potentialObjs.length; i++) {
+                var obj = potentialObjs[i];
+                var lit = { polarity: true, relation: "holding", args: [obj] };
+                if (isFeasible(lit, state)) {
+                    interpretation.push([lit]);
                 }
             }
         }
@@ -2906,6 +2899,7 @@ var Interpreter;
         var _a, _b;
     }
     Interpreter.matchesRelation = matchesRelation;
+    //@returns the indexes of where the given object is in the given worldstate
     function findObjectInWorld(object, state) {
         for (var i = 0; i < state.stacks.length; i++) {
             for (var j = 0; j < state.stacks[i].length; j++) {
@@ -3030,8 +3024,7 @@ function aStarSearch(graph, start, goal, heuristics, timeout) {
             }
         }
     }
-    console.log("error: timeout!");
-    return null;
+    throw new Error("Time out");
 }
 ///<reference path="World.ts"/>
 ///<reference path="Interpreter.ts"/>
@@ -3114,6 +3107,7 @@ var Planner;
         }
         WorldStateNode.prototype.toString = function () {
             if (this.identifier != null) {
+                //some dynamic programming for performance
                 return this.identifier;
             }
             var s = "";
@@ -3168,7 +3162,7 @@ var Planner;
             }
             return edgeList;
         };
-        /** A function that compares nodes. */
+        /** A function that compares nodes. Returns 0 if they are equal and 1 otherwise */
         StateGraph.prototype.compareNodes = function (n1, n2) {
             var s1 = n1.state;
             var s2 = n2.state;
@@ -3209,38 +3203,22 @@ var Planner;
             result.push("d");
             return result;
         }
-        var args = [w1.holding, w1.stacks[w1.arm][w1.arm - 1]]; //is this the right one ?
-        var lit;
-        if (args[1] == "box") {
-            lit = { relation: "inside", polarity: true, args: args };
+        var temp = w1.stacks[w1.arm][w1.stacks[w1.arm].length - 1];
+        var obj2 = w1.objects[temp];
+        var obj = w1.objects[w1.holding];
+        if ((obj2 == null) || (obj == null)) {
+            return result;
         }
-        else {
-            lit = { relation: "ontop", polarity: true, args: args };
-            if (Interpreter.isFeasible(lit, w1)) {
-                result.push("d");
-            }
+        if (!(obj.form == "ball" && obj2.form != "box") &&
+            (!((obj.form == "box" && obj.size == "small") && (obj2.size == "small" && (obj2.form == "brick" || obj2.form == "pyramid")))) &&
+            (!((obj.size == "large" && obj.form == "box") && (obj2.form != "brick" && obj2.form != "table"))) &&
+            (!(obj2.size == "small" && obj.size == "large")) &&
+            (!(obj2.form == "ball")) && (w1.stacks[w1.arm].length < 5)) {
+            result.push("d");
         }
-        /**
-  
-        var temp : string = w1.stacks[w1.arm][w1.stacks[w1.arm].length-1];
-  
-        var obj2 : ObjectDefinition = w1.objects[temp];
-        var obj : ObjectDefinition = w1.objects[w1.holding];
-  
-        if((obj2 == null) || (obj == null))
-        {
-          return result;
-        }
-        if(!(obj.form == "ball" && obj2.form != "box") &&
-        (!((obj.form == "box" && obj.size == "small") && (obj2.size == "small" && (obj2.form == "brick" || obj2.form == "pyramid")))) &&
-        (!((obj.size == "large" && obj.form == "box") && (obj2.form == "pyramid"))) &&
-        (!(obj2.size == "small" && obj.size == "large")) &&
-        (!(obj2.form == "ball")) && (w1.stacks[w1.arm].length < 5)) {
-          result.push("d");
-        }
-        **/
         return result;
     }
+    //@returns the heuristic cost of a single literal
     function heur(ws, lit) {
         var cost = 0;
         switch (lit.relation) {
@@ -3250,9 +3228,9 @@ var Planner;
                 cost += moveCost(pos, ws);
                 return cost;
             case "ontop":
-                return onTopCost(ws, lit);
+                return onTopCost(ws, lit.args);
             case "inside":
-                return onTopCost(ws, lit);
+                return onTopCost(ws, lit.args);
             case "above":
                 var obj1 = lit.args[0];
                 var obj2 = lit.args[1];
@@ -3266,32 +3244,29 @@ var Planner;
                 var pos2 = posOf(obj2, ws);
                 return Math.max(moveCost(pos1, ws), moveCost(pos2, ws)) + pickupCost(obj1, ws, pos1) + 1; //+1 is dropcost
             case "beside":
-                var obj = lit.args[0];
-                var locPos = posOf(lit.args[1], ws);
-                var costLeft = Infinity;
-                var costRight = Infinity;
-                if (locPos < ws.stacks.length - 1) {
-                    costRight = moveCost(locPos + 1, ws);
-                }
-                if (locPos > 0) {
-                    costLeft = moveCost(locPos - 1, ws);
-                }
-                return Math.min(costLeft, costRight);
+                return besideCost(ws, lit.args);
             case "leftof":
-                var objPos = posOf(lit.args[0], ws);
-                return moveCost(objPos, ws);
+                return besideCost(ws, lit.args);
             case "rightof":
-                var objPos = posOf(lit.args[0], ws);
-                return moveCost(objPos, ws);
+                return besideCost(ws, lit.args);
         }
         return cost;
     }
+    function besideCost(ws, args) {
+        var obj = args[0];
+        var loc = args[1];
+        var objPos = posOf(obj, ws);
+        var locPos = posOf(loc, ws);
+        return Math.min(pickupCost(obj, ws, objPos) + moveCost(objPos, ws), pickupCost(loc, ws, locPos)
+            + moveCost(locPos, ws)) + Math.abs(locPos - objPos) + 1;
+    }
+    //The minimum cost of emptying a stack
     function clearStackCost(index, ws) {
         return ws.stacks[index].length * 4 + Math.abs(ws.arm - index);
     }
-    function onTopCost(ws, lit) {
-        var obj = lit.args[0];
-        var loc = lit.args[1];
+    function onTopCost(ws, args) {
+        var obj = args[0];
+        var loc = args[1];
         var pos1 = posOf(obj, ws);
         var pos2 = posOf(loc, ws);
         if (loc == "floor") {
@@ -3306,6 +3281,7 @@ var Planner;
         }
         return pickupCost(obj, ws, pos1) + dropCost(loc, ws, pos2) + Math.max(moveCost(pos1, ws), moveCost(pos2, ws));
     }
+    //The minimum cost of moving from state.arm to pos
     function moveCost(pos, state) {
         if (pos == -1) {
             return 0;
@@ -3317,6 +3293,7 @@ var Planner;
             return Math.abs(state.arm - pos);
         }
     }
+    //The minumum cost of dropping something in loc
     function dropCost(loc, ws, pos) {
         if (ws.holding == loc) {
             return 1;
@@ -3324,6 +3301,7 @@ var Planner;
         return nrOfItemsOnTopOf(loc, ws, pos) * 4 + 1;
         ;
     }
+    //The minimum cost of picking up desiredObject
     function pickupCost(desiredObject, ws, pos) {
         var cost = 0;
         if (ws.holding == desiredObject) {
@@ -3348,6 +3326,7 @@ var Planner;
         }
         return result;
     }
+    //returns the index of the stack containing the object s
     function posOf(s, ws) {
         var result = -1; //returns -1 if it is being held or it doesnt exist
         if (s == "floor") {
@@ -3362,17 +3341,7 @@ var Planner;
         }
         return result;
     }
-    //////////////////////////////////////////////////////////////////////
-    // private functions
     /**
-     * The core planner function. The code here is just a template;
-     * you should rewrite this function entirely. In this template,
-     * the code produces a dummy plan which is not connected to the
-     * argument `interpretation`, but your version of the function
-     * should be such that the resulting plan depends on
-     * `interpretation`.
-     *
-     *
      * @param interpretation The logical interpretation of the user's desired goal. The plan needs to be such that by executing it, the world is put into a state that satisfies this goal.
      * @param state The current world state.
      * @returns Basically, a plan is a
@@ -3382,33 +3351,21 @@ var Planner;
      * "d". The code shows how to build a plan. Each step of the plan can
      * be added using the `push` method.
      */
-    function planInterpretation2(interpretation, state) {
-        var testNode = new WorldStateNode(state);
-        var heuristics = function heuristicsf(node) {
-            var minhcost = Infinity;
-            for (var i = 0; i < interpretation.length; i++) {
-                minhcost = Math.min(minhcost, heur(node.state, interpretation[i][0]));
-            }
-            return minhcost; //return minhcost;
-        };
-        return null;
-    }
     function planInterpretation(interpretation, state) {
-        //var testNode : WorldStateNode = new WorldStateNode(state);
         var stateGraph = new StateGraph();
-        //TODO heuristics function
+        //The heuristics function
         var heuristics = function heuristicsf(node) {
             var minhcost = Infinity;
             for (var i = 0; i < interpretation.length; i++) {
                 minhcost = Math.min(minhcost, heur(node.state, interpretation[i][0]));
             }
-            return minhcost; //return minhcost;
+            return minhcost;
         };
+        // The goalfunction , not taking polarities into account, since we don't handle them.
         var goalFunction = function goalf(node) {
             var world = node.state;
-            var result = false;
             for (var i = 0; i < interpretation.length; i++) {
-                var l = interpretation[i][0]; //assuming just 1 literal per potential goal
+                var l = interpretation[i][0];
                 var subResult;
                 if (l.relation == "holding") {
                     subResult = world.holding == l.args[0];
@@ -3416,14 +3373,14 @@ var Planner;
                 else {
                     subResult = Interpreter.matchesRelation(l.args[0], l.args[1], l.relation, world);
                 }
-                if (!l.polarity) {
-                    subResult = !subResult;
+                if (subResult) {
+                    return true;
                 }
-                result = result || subResult;
             }
-            return result;
+            return false;
         };
         var result = aStarSearch(stateGraph, new WorldStateNode(state), goalFunction, heuristics, 10);
+        //reconstruct the command sequence from result.path
         var plan = new Array();
         for (var i = 0; i < result.path.length - 1; i++) {
             var current = result.path[i].state;
@@ -3518,6 +3475,9 @@ var Shrdlite;
                 world.printDebugInfo("  (" + n + ") " + Interpreter.stringify(result));
             });
             if (interpretations.length > 1) {
+                // several interpretations were found -- how should this be handled?
+                // should we throw an ambiguity error?
+                throw new Error("Ambiguous utterance");
             }
         }
         catch (err) {
@@ -3780,7 +3740,7 @@ ExampleWorlds["medium"] = {
 };
 ExampleWorlds["small"] = {
     "stacks": [["e"], ["g", "l"], [], ["k", "m", "f"], []],
-    "holding": "a",
+    "holding": null,
     "arm": 0,
     "objects": {
         "a": { "form": "brick", "size": "large", "color": "green" },
