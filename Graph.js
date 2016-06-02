@@ -82,6 +82,5 @@ function aStarSearch(graph, start, goal, heuristics, timeout) {
             }
         }
     }
-    console.log("error: timeout!");
-    return null;
+    throw new Error("Time out");
 }

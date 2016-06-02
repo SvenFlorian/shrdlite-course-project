@@ -130,6 +130,5 @@ function aStarSearch<Node> (
       }
     }
   }
-  console.log("error: timeout!");
-  return null;
+    throw new Error("Time out");
 }
