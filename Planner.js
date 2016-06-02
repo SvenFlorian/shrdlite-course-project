@@ -158,7 +158,7 @@ var Planner;
             (!((obj.form == "box" && obj.size == "small") && (obj2.size == "small" && (obj2.form == "brick" || obj2.form == "pyramid")))) &&
             (!((obj.size == "large" && obj.form == "box") && (obj2.form != "brick" && obj2.form != "table"))) &&
             (!(obj2.size == "small" && obj.size == "large")) &&
-            (!(obj2.form == "ball")) && (w1.stacks[w1.arm].length < w1.stacks.length)) {
+            (!(obj2.form == "ball")) && (w1.stacks[w1.arm].length < 5)) {
             result.push("d");
         }
         return result;
